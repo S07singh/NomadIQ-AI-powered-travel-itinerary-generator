@@ -2,20 +2,45 @@
 Structured Output Converter for NomadIQ.
 
 Takes free-form markdown text from agents and converts it into
-a strict JSON schema (ItineraryResponse) using Gemini.
+a strict JSON schema (ItineraryResponse) using the LLM.
 """
 
 import json
 import re
 from loguru import logger
-from config.llm import client, get_model_id
+from config.llm import generate
 from models.schemas import ItineraryResponse
 
 
-def _clean_json_string(text: str) -> str:
-    """Remove markdown code blocks and clean whitespace from a JSON string."""
-    # Remove ```json ... ``` blocks
-    text = re.sub(r"```(?:json)?\n?(.*?)```", r"\1", text, flags=re.DOTALL)
+def _extract_json(text: str) -> str:
+    """
+    Robustly extract a JSON object from LLM output that may contain
+    extra text, markdown fences, or explanations around the JSON.
+    """
+    # 1. Remove markdown code fences
+    text = re.sub(r"```(?:json)?\s*\n?", "", text)
+    text = re.sub(r"```", "", text)
+    text = text.strip()
+    
+    # 2. Try to find JSON object by matching outermost { ... }
+    depth = 0
+    start = -1
+    for i, ch in enumerate(text):
+        if ch == '{':
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0 and start != -1:
+                candidate = text[start:i + 1]
+                try:
+                    json.loads(candidate)
+                    return candidate
+                except json.JSONDecodeError:
+                    start = -1  # try next potential JSON block
+    
+    # 3. Fallback: try the whole text
     return text.strip()
 
 
@@ -64,16 +89,13 @@ Text to convert:
     )
 
     try:
-        response = await client.aio.models.generate_content(
-            model=get_model_id(),
-            contents=prompt,
-            config={
-                "system_instruction": system_instruction,
-                "temperature": 0.1,
-            },
+        response_text = await generate(
+            prompt,
+            system_instruction=system_instruction,
+            temperature=0.1,
         )
         
-        json_string = _clean_json_string(response.text)
+        json_string = _extract_json(response_text)
         
         # Validate the JSON parses correctly
         json.loads(json_string)
@@ -82,6 +104,7 @@ Text to convert:
         
     except json.JSONDecodeError as e:
         logger.error(f"❌ JSON parsing error: {e}")
+        logger.debug(f"Raw response (first 500 chars): {response_text[:500] if response_text else 'EMPTY'}")
         # Return a minimal valid structure on failure
         fallback = ItineraryResponse(
             tips=["Error converting travel plan to structured format. Raw data was preserved."],

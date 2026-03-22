@@ -2,10 +2,10 @@
 Budget Optimizer Agent for NomadIQ.
 
 Analyzes costs and provides budget breakdowns and optimization tips.
-Uses Google Gemini directly (free).
+Uses the unified LLM provider (Gemini or Ollama).
 """
 
-from config.llm import client, get_model_id
+from config.llm import generate
 from loguru import logger
 
 BUDGET_SYSTEM_PROMPT = """You are a travel budget expert and financial planner.
@@ -72,15 +72,7 @@ Please provide:
 Use the traveler's stated currency for all amounts."""
 
     try:
-        response = await client.aio.models.generate_content(
-            model=get_model_id(),
-            contents=prompt,
-            config={
-                "system_instruction": BUDGET_SYSTEM_PROMPT,
-                "temperature": 0.3,
-            },
-        )
-        result = response.text
+        result = await generate(prompt, system_instruction=BUDGET_SYSTEM_PROMPT, temperature=0.3)
         logger.info(f"✅ Budget Agent: Analysis complete ({len(result)} chars)")
         return result
     except Exception as e:

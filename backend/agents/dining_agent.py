@@ -2,10 +2,10 @@
 Dining Agent for NomadIQ.
 
 Recommends restaurants, food markets, and culinary experiences.
-Uses Google Gemini directly (free).
+Uses the unified LLM provider (Gemini or Ollama).
 """
 
-from config.llm import client, get_model_id
+from config.llm import generate
 from loguru import logger
 
 DINING_SYSTEM_PROMPT = """You are an expert culinary guide and food critic.
@@ -58,15 +58,7 @@ Please provide:
 Match recommendations to the traveler's budget and dietary preferences if mentioned."""
 
     try:
-        response = await client.aio.models.generate_content(
-            model=get_model_id(),
-            contents=prompt,
-            config={
-                "system_instruction": DINING_SYSTEM_PROMPT,
-                "temperature": 0.7,
-            },
-        )
-        result = response.text
+        result = await generate(prompt, system_instruction=DINING_SYSTEM_PROMPT, temperature=0.7)
         logger.info(f"✅ Dining Agent: Search complete ({len(result)} chars)")
         return result
     except Exception as e:

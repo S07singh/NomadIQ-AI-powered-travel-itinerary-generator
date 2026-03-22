@@ -2,10 +2,10 @@
 Hotel Search Agent for NomadIQ.
 
 Recommends accommodations based on destination, budget, and travel style.
-Uses Google Gemini directly (free, no paid scraping API needed).
+Uses the unified LLM provider (Gemini or Ollama).
 """
 
-from config.llm import client, get_model_id
+from config.llm import generate
 from loguru import logger
 
 HOTEL_SYSTEM_PROMPT = """You are an expert hotel and accommodation search assistant.
@@ -57,15 +57,7 @@ Please provide:
 Make sure recommendations fit within the stated budget and travel style."""
 
     try:
-        response = await client.aio.models.generate_content(
-            model=get_model_id(),
-            contents=prompt,
-            config={
-                "system_instruction": HOTEL_SYSTEM_PROMPT,
-                "temperature": 0.5,
-            },
-        )
-        result = response.text
+        result = await generate(prompt, system_instruction=HOTEL_SYSTEM_PROMPT, temperature=0.5)
         logger.info(f"✅ Hotel Agent: Search complete ({len(result)} chars)")
         return result
     except Exception as e:
