@@ -1,0 +1,12 @@
+# NomadIQ Backend Dependencies
+fastapi>=0.115.0
+uvicorn>=0.34.0
+pydantic>=2.11.0
+python-dotenv>=1.1.0
+loguru>=0.7.3
+aiosqlite>=0.20.0
+aiofiles>=24.1.0
+httpx>=0.28.0
+
+# Optional: Only needed if using Gemini (LLM_PROVIDER=gemini)
+# google-genai>=1.18.0
