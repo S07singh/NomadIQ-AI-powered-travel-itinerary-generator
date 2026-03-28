@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth Models (NextAuth) ──────────────────────────────
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime?
+  hashedPassword String?
+  image          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  trips    TripPlan[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Trip Models ─────────────────────────────────────────
+
+model TripPlan {
+  id                String   @id @default(cuid())
+  userId            String
+  name              String   @default("")
+  destination       String
+  startingLocation  String   @default("")
+  travelDatesStart  String   @default("")
+  travelDatesEnd    String   @default("")
+  duration          Int      @default(3)
+  travelingWith     String   @default("Solo")
+  adults            Int      @default(1)
+  children          Int      @default(0)
+  budget            Float    @default(1000)
+  budgetCurrency    String   @default("USD")
+  travelStyle       String   @default("comfort")
+  vibes             String[] @default([])
+  interests         String   @default("")
+  additionalInfo    String   @default("")
+  status            String   @default("pending")
+  currentStep       String?
+  itinerary         Json?
+  rawResponses      Json?
+  error             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  chatMessages ChatMessage[]
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ChatMessage {
+  id         String   @id @default(cuid())
+  tripPlanId String
+  role       String
+  content    String   @db.Text
+  createdAt  DateTime @default(now())
+
+  tripPlan TripPlan @relation(fields: [tripPlanId], references: [id], onDelete: Cascade)
+
+  @@index([tripPlanId])
+}

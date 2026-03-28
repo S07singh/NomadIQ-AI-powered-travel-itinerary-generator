@@ -97,22 +97,34 @@ export default function PlanPage() {
     setLoading(true);
 
     try {
-      const tripPlanId = crypto.randomUUID();
-      const response = await fetch("http://localhost:8000/api/plan/trigger", {
+      // Step 1: Save trip to PostgreSQL (via Prisma)
+      const createRes = await fetch("/api/trips", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!createRes.ok) throw new Error("Failed to create trip");
+      const { trip_plan_id } = await createRes.json();
+
+      // Step 2: Trigger backend AI generation
+      const triggerRes = await fetch("http://localhost:8000/api/plan/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          trip_plan_id: tripPlanId,
+          trip_plan_id: trip_plan_id,
           travel_plan: form,
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to trigger plan");
-      const data = await response.json();
-      router.push(`/plan/${data.trip_plan_id}`);
+      if (!triggerRes.ok) {
+        console.warn("Backend trigger failed, trip saved to DB without AI generation.");
+      }
+
+      router.push(`/plan/${trip_plan_id}`);
     } catch (error) {
       console.error("Error:", error);
-      alert("Failed to create trip. Make sure the backend is running on port 8000.");
+      alert("Failed to create trip. Make sure you're logged in.");
       setLoading(false);
     }
   };
