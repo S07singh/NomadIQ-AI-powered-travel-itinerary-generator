@@ -108,26 +108,30 @@ async def generate_travel_plan(trip_plan_id: str, travel_plan: TravelPlanRequest
         # ─── Step 7: Convert to Structured JSON ──────────────
         await update_plan_status(trip_plan_id, "processing", "Finalizing your travel plan")
         
-        all_agent_output = f"""
-{combined_context}
-
-## Day-by-Day Itinerary:
-{itinerary_result}
-
-## Budget Analysis:
-{budget_result}
-"""
-        structured_json = await convert_to_structured_json(all_agent_output)
+        structured_json = await convert_to_structured_json(
+            destination_text=destination_result,
+            hotel_text=hotel_result,
+            dining_text=dining_result,
+            itinerary_text=itinerary_result,
+            budget_text=budget_result,
+            num_days=travel_plan.duration,
+        )
         
         # ─── Step 8: Build final response and save ───────────
+        # Parse structured_json from string to dict (avoid double-encoding)
+        try:
+            itinerary_data = json.loads(structured_json) if isinstance(structured_json, str) else structured_json
+        except (json.JSONDecodeError, TypeError):
+            itinerary_data = structured_json
+        
         final_response = json.dumps({
-            "itinerary": structured_json,
+            "itinerary": itinerary_data,
             "raw_responses": {
-                "destination": destination_result,
-                "hotel": hotel_result,
-                "dining": dining_result,
-                "itinerary": itinerary_result,
-                "budget": budget_result,
+                "destination_agent": destination_result,
+                "hotel_agent": hotel_result,
+                "dining_agent": dining_result,
+                "itinerary_agent": itinerary_result,
+                "budget_agent": budget_result,
             }
         }, indent=2)
         

@@ -8,33 +8,7 @@ Uses the unified LLM provider (Gemini or Ollama).
 from config.llm import generate
 from loguru import logger
 
-ITINERARY_SYSTEM_PROMPT = """You are a master itinerary creator with expertise in crafting 
-detailed, perfectly-timed daily travel plans.
-
-Given all the travel context (destination research, hotels, restaurants, traveler preferences), 
-create a structured day-by-day itinerary.
-
-For each day, organize into three time blocks:
-- **Morning (7 AM - 12 PM)**: Breakfast + morning activities
-- **Afternoon (12 PM - 6 PM)**: Lunch + main activities
-- **Evening (6 PM - 11 PM)**: Dinner + evening activities
-
-For each activity include:
-- Specific time (e.g., "9:00 AM - 11:00 AM")
-- Activity name and description
-- Location
-- Estimated cost
-- Transport between locations
-- Tips for timing
-
-Add daily notes with:
-- Weather considerations
-- What to wear/bring
-- Advance booking reminders
-- Local tips
-
-Make the itinerary realistic with proper buffer time between activities.
-Format your response in clean markdown with clear sections."""
+ITINERARY_SYSTEM_PROMPT = """You are a travel itinerary planner. Create concise day-by-day plans with morning, afternoon, and evening activities. Use markdown format. Be brief and practical."""
 
 
 async def run_itinerary_agent(
@@ -55,24 +29,24 @@ async def run_itinerary_agent(
     """
     logger.info(f"📅 Itinerary Agent: Creating itinerary for {destination}")
     
-    prompt = f"""Create a detailed day-by-day itinerary for a trip to {destination}.
+    # Truncate context to avoid overwhelming local models
+    short_context = context[:2000] if len(context) > 2000 else context
+    
+    prompt = f"""Create a {destination} trip itinerary.
 
-Traveler's preferences:
-{travel_request_md}
+Preferences:
+{travel_request_md[:800]}
 
-Available information from research:
-{context}
+Context:
+{short_context}
 
-Create a complete itinerary that:
-1. Covers every day of the trip with morning/afternoon/evening blocks
-2. Includes specific times for each activity
-3. References the researched attractions, hotels, and restaurants
-4. Accounts for travel time between locations
-5. Matches the traveler's pace preference
-6. Includes practical daily notes (what to bring, weather tips)
-7. Balances activity with rest time
+For each day write:
+- **Morning**: activities
+- **Afternoon**: activities  
+- **Evening**: activities
+- **Notes**: tips
 
-Format each day clearly with time blocks and practical information."""
+Keep it concise. Use markdown."""
 
     try:
         result = await generate(prompt, system_instruction=ITINERARY_SYSTEM_PROMPT, temperature=0.5)

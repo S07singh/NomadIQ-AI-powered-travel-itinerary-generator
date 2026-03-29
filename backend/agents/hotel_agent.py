@@ -8,25 +8,7 @@ Uses the unified LLM provider (Gemini or Ollama).
 from config.llm import generate
 from loguru import logger
 
-HOTEL_SYSTEM_PROMPT = """You are an expert hotel and accommodation search assistant.
-Given a destination and traveler preferences, recommend the best hotels and stays.
-
-For each hotel recommendation, include:
-- Hotel name
-- Price range per night (in the traveler's currency)
-- Star rating
-- Location/area and why it's good
-- Key amenities
-- Brief description of the stay experience
-- Who it's best for (couples, families, solo, etc.)
-
-Provide 5 hotel recommendations spanning different price points within the budget.
-Include a mix of:
-- Hotels
-- Boutique stays
-- Budget-friendly options if applicable
-
-Format your response in clean markdown with clear sections."""
+HOTEL_SYSTEM_PROMPT = """You are a hotel search assistant. Recommend hotels with: name, price per night, rating, location, amenities, description. Provide 3-5 options across different price points. Use markdown. Be concise."""
 
 
 async def run_hotel_agent(destination: str, travel_request_md: str) -> str:
@@ -42,19 +24,13 @@ async def run_hotel_agent(destination: str, travel_request_md: str) -> str:
     """
     logger.info(f"🏨 Hotel Agent: Searching hotels in {destination}")
     
-    prompt = f"""Find the best hotel recommendations for: {destination}
+    prompt = f"""Recommend hotels in {destination}.
 
-Here are the traveler's full preferences:
-{travel_request_md}
+Preferences:
+{travel_request_md[:800]}
 
-Please provide:
-1. **Top 5 Hotel Recommendations** sorted by best value
-2. For each hotel include: name, price per night, rating, location, key amenities, description
-3. **Why each hotel matches** the traveler's style and budget
-4. **Booking tips** for getting the best rates
-5. **Area recommendations** - which neighborhoods are best to stay in
-
-Make sure recommendations fit within the stated budget and travel style."""
+List 3-5 hotels with: name, price/night, rating, location, amenities, description.
+Use markdown. Be concise."""
 
     try:
         result = await generate(prompt, system_instruction=HOTEL_SYSTEM_PROMPT, temperature=0.5)

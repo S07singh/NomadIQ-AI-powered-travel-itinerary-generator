@@ -8,24 +8,7 @@ Uses the unified LLM provider (Gemini or Ollama).
 from config.llm import generate
 from loguru import logger
 
-BUDGET_SYSTEM_PROMPT = """You are a travel budget expert and financial planner.
-Given a complete travel plan with hotels, activities, and dining, calculate 
-the total estimated cost and provide a detailed budget breakdown.
-
-Your analysis should include:
-- Itemized cost breakdown by category (accommodation, food, activities, transport)
-- Total estimated trip cost
-- Per-person and per-day costs
-- Money-saving alternatives where applicable
-- Hidden costs to watch out for
-- Tipping customs
-- Currency exchange tips
-
-All amounts should be in the traveler's preferred currency.
-If costs exceed the stated budget, suggest specific alternatives to reduce costs.
-If costs are well under budget, suggest premium upgrades they could afford.
-
-Format your response in clean markdown with clear sections and tables."""
+BUDGET_SYSTEM_PROMPT = """You are a travel budget analyst. Calculate trip costs and provide a breakdown by category. Include total cost, per-day cost, and money-saving tips. Use markdown format. Be concise."""
 
 
 async def run_budget_agent(
@@ -46,30 +29,24 @@ async def run_budget_agent(
     """
     logger.info(f"💰 Budget Agent: Analyzing costs for {destination}")
     
-    prompt = f"""Analyze and optimize the budget for a trip to {destination}.
+    # Truncate context to avoid overwhelming local models
+    short_context = context[:2000] if len(context) > 2000 else context
+    
+    prompt = f"""Analyze budget for a trip to {destination}.
 
-Traveler's preferences and budget:
-{travel_request_md}
+Preferences:
+{travel_request_md[:800]}
 
-Complete trip plan so far:
-{context}
+Trip plan:
+{short_context}
 
-Please provide:
-1. **Total Estimated Cost** for the entire trip
-2. **Breakdown by Category**:
-   - ✈️ Transportation (flights, local transport)
-   - 🏨 Accommodation (total for all nights)
-   - 🍽️ Food & Dining (daily estimates)
-   - 🎯 Activities & Attractions (entrance fees, tours)
-   - 🛍️ Shopping & Miscellaneous
-   - 📱 Connectivity (SIM cards, WiFi)
-3. **Per-Person Cost** and **Per-Day Cost**
-4. **Budget vs. Actual** comparison
-5. **Money-Saving Tips** specific to this destination
-6. **Hidden Costs** to watch out for
-7. **Currency & Payment Tips**
+Provide:
+1. **Total Estimated Cost**
+2. **Breakdown**: Transport, Accommodation, Food, Activities
+3. **Per-Day Cost**
+4. **Money-Saving Tips**
 
-Use the traveler's stated currency for all amounts."""
+Use the traveler's currency. Be concise."""
 
     try:
         result = await generate(prompt, system_instruction=BUDGET_SYSTEM_PROMPT, temperature=0.3)

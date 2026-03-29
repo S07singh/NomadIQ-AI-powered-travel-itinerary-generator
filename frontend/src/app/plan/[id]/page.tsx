@@ -251,8 +251,18 @@ export default function PlanDetailPage({
     );
   }
 
-  const itinerary = plan.itinerary as Record<string, unknown> | null;
-  const rawResponses = plan.raw_responses as Record<string, unknown> | null;
+  // Robustly parse JSON fields that might be strings or objects
+  const parseJsonField = (val: unknown): Record<string, unknown> | null => {
+    if (!val) return null;
+    if (typeof val === "string") {
+      try { return JSON.parse(val); } catch { return null; }
+    }
+    if (typeof val === "object") return val as Record<string, unknown>;
+    return null;
+  };
+
+  const itinerary = parseJsonField(plan.itinerary);
+  const rawResponses = parseJsonField(plan.raw_responses);
 
   const isProcessing =
     plan.status === "pending" || plan.status === "processing";
@@ -385,16 +395,41 @@ export default function PlanDetailPage({
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {Array.isArray((itinerary as Record<string, unknown>).day_by_day_plan) ? (
+                      {itinerary && Array.isArray((itinerary as Record<string, unknown>).day_by_day_plan) && ((itinerary as Record<string, unknown>).day_by_day_plan as unknown[]).length > 0 ? (
                         <div className="space-y-6">
                           {((itinerary as Record<string, unknown>)
                             .day_by_day_plan as Array<Record<string, unknown>>
                           ).map((day, i) => (
                             <div key={i}>
-                              <h3 className="font-bold text-lg text-emerald-700 mb-2">
-                                Day {(day.day as number) || i + 1}: {(day.title as string) || ""}
+                              <h3 className="font-bold text-lg text-emerald-700 mb-3">
+                                Day {(day.day as number) || i + 1}{day.date ? `: ${day.date}` : ""}{day.title ? ` — ${day.title}` : ""}
                               </h3>
-                              {Array.isArray(day.activities) ? (
+                              {/* New format: morning/afternoon/evening */}
+                              {!!(day.morning || day.afternoon || day.evening) ? (
+                                <div className="space-y-3 ml-4">
+                                  {!!day.morning && (
+                                    <div className="flex gap-3 p-2 rounded-lg hover:bg-muted/50">
+                                      <span className="text-xs font-mono text-amber-600 w-16 shrink-0 pt-0.5 font-semibold">Morning</span>
+                                      <p className="text-sm">{String(day.morning)}</p>
+                                    </div>
+                                  )}
+                                  {!!day.afternoon && (
+                                    <div className="flex gap-3 p-2 rounded-lg hover:bg-muted/50">
+                                      <span className="text-xs font-mono text-blue-600 w-16 shrink-0 pt-0.5 font-semibold">Afternoon</span>
+                                      <p className="text-sm">{String(day.afternoon)}</p>
+                                    </div>
+                                  )}
+                                  {!!day.evening && (
+                                    <div className="flex gap-3 p-2 rounded-lg hover:bg-muted/50">
+                                      <span className="text-xs font-mono text-purple-600 w-16 shrink-0 pt-0.5 font-semibold">Evening</span>
+                                      <p className="text-sm">{String(day.evening)}</p>
+                                    </div>
+                                  )}
+                                  {!!day.notes && (
+                                    <p className="text-xs text-muted-foreground italic ml-2">💡 {String(day.notes)}</p>
+                                  )}
+                                </div>
+                              ) : Array.isArray(day.activities) ? (
                                 <div className="space-y-2 ml-4">
                                   {(day.activities as Array<Record<string, string>>).map(
                                     (act, j) => (
@@ -457,10 +492,15 @@ export default function PlanDetailPage({
                           {((itinerary as Record<string, unknown>).hotels as Array<Record<string, string>>).map(
                             (hotel, i) => (
                               <div key={i} className="p-4 rounded-lg border">
-                                <h4 className="font-semibold">{hotel.name}</h4>
-                                {hotel.price_range && (
-                                  <Badge className="mt-1">{hotel.price_range}</Badge>
-                                )}
+                                <h4 className="font-semibold">{hotel.hotel_name || hotel.name}</h4>
+                                <div className="flex gap-2 mt-1">
+                                  {(hotel.price || hotel.price_range) && (
+                                    <Badge className="bg-emerald-100 text-emerald-700 border-0">{hotel.price || hotel.price_range}</Badge>
+                                  )}
+                                  {hotel.rating && (
+                                    <Badge variant="outline">⭐ {hotel.rating}</Badge>
+                                  )}
+                                </div>
                                 {hotel.description && (
                                   <p className="text-sm text-muted-foreground mt-2">
                                     {hotel.description}
@@ -569,7 +609,7 @@ export default function PlanDetailPage({
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {!!(itinerary as Record<string, unknown>).budget_summary || !!(itinerary as Record<string, unknown>).total_estimated_cost ? (
+                      {itinerary && (!!(itinerary as Record<string, unknown>).budget_summary || !!(itinerary as Record<string, unknown>).total_estimated_cost) ? (
                         <div className="space-y-4">
                           {!!(itinerary as Record<string, unknown>).total_estimated_cost && (
                             <div className="p-4 bg-emerald-50 rounded-lg">
@@ -583,15 +623,17 @@ export default function PlanDetailPage({
                             </div>
                           )}
                           {!!(itinerary as Record<string, unknown>).budget_summary && (
-                            <p className="text-muted-foreground">
-                              {String((itinerary as Record<string, unknown>).budget_summary)}
-                            </p>
+                            <div className="prose prose-sm max-w-none">
+                              <ReactMarkdown>
+                                {String((itinerary as Record<string, unknown>).budget_summary)}
+                              </ReactMarkdown>
+                            </div>
                           )}
                         </div>
                       ) : rawResponses ? (
                         <div className="prose prose-sm max-w-none">
                           <ReactMarkdown>
-                            {(rawResponses as Record<string, string>).budget_agent || "No budget data"}
+                            {String((rawResponses as Record<string, string>).budget_agent || "No budget data")}
                           </ReactMarkdown>
                         </div>
                       ) : (
