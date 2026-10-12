@@ -157,7 +157,7 @@ async def test_wikipedia_images_and_failure_is_soft():
     async with client_for(handler) as http:
         imgs = await WikipediaImageProvider(http).search("Taj Mahal", 3)
         assert len(imgs) == 1 and imgs[0].url == "https://up/thumb/a/1280px-Taj.jpg" and imgs[0].source_url == "https://w/T"
-        assert imgs[0].thumbnail_url == "https://up/thumb/a/480px-Taj.jpg"
+        assert imgs[0].thumbnail_url == "https://up/thumb/a/500px-Taj.jpg"
     async with client_for(lambda r: httpx.Response(503)) as http:
         assert await WikipediaImageProvider(http).search("x") == []
 

@@ -62,7 +62,7 @@ class MockImageProvider(ImageProvider):
 
 
 DISPLAY_WIDTH = 1280
-THUMB_WIDTH = 480
+THUMB_WIDTH = 500  # Wikimedia only serves standard widths (e.g. 250, 330, 500, 960, 1280); 480 returns HTTP 400
 
 
 def small_variant(url: str) -> str:
