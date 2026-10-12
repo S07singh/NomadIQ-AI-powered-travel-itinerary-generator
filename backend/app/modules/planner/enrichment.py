@@ -18,6 +18,17 @@ from app.providers.media import maps_url
 from app.providers.registry import Providers
 
 MAX_CONCURRENCY = 8
+GALLERY_SIZE = 6
+
+
+def dedupe_images(images: list[MediaImage]) -> list[MediaImage]:
+    seen: set[str] = set()
+    out = []
+    for img in images:
+        if img.url not in seen:
+            seen.add(img.url)
+            out.append(img)
+    return out
 
 
 class MediaLookup:
@@ -105,13 +116,14 @@ async def enrich_plan(plan: TripPlan, destination: str, start: date | None, end:
         gallery_t, videos_t, weather_t, asyncio.gather(*attraction_t), asyncio.gather(*attraction_video_t)
     )
 
-    plan.gallery = gallery
     plan.videos = [v for group in video_groups for v in group]
     for a, imgs in zip(plan.attractions, attr_images):
         a.images = imgs
     for a, vids in zip(plan.attractions, attr_videos):
         a.videos = vids
-    plan.cover_image = (gallery or [None])[0] or next((a.images[0] for a in plan.attractions if a.images), None)
+    # Landmark photos matched to named attractions are more relevant than a generic search.
+    plan.gallery = dedupe_images([a.images[0] for a in plan.attractions if a.images] + gallery)[:GALLERY_SIZE]
+    plan.cover_image = plan.gallery[0] if plan.gallery else None
 
     # Reuse attraction photos on itinerary items that visit them.
     by_name = {a.name.lower(): a for a in plan.attractions}

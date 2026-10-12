@@ -185,8 +185,8 @@ class AssistantService:
     def _offers_reply(d: AssistantDecision, offers: list, kind: str) -> tuple[str, list[AssistantAction]]:
         if not offers:
             return f"I couldn't find any {kind} options for that. Want to try different dates?", []
-        top = offers[:MAX_OFFERS_IN_CHAT]
-        cheapest = min(offers, key=lambda o: o.price.amount)
+        by_price = sorted(offers, key=lambda o: o.price.amount)
+        top, cheapest = by_price[:MAX_OFFERS_IN_CHAT], by_price[0]
         text = d.reply or f"I found {len(offers)} {kind} options."
         text += f" Cheapest: {cheapest.title} at {cheapest.price.amount:,.0f} {cheapest.price.currency}."
         return text, [AssistantAction(type="show_offers", data={"kind": kind, "total": len(offers), "results": [o.model_dump(mode="json") for o in top]})]

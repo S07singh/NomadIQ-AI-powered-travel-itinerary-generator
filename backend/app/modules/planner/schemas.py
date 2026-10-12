@@ -29,7 +29,7 @@ def _marker(prompt: str, name: str, default: str = "") -> str:
 
 
 def _dest(prompt: str) -> str:
-    return _marker(prompt, "DESTINATION", "the destination")
+    return _marker(prompt, "DESTINATION", "the destination").split(",")[0].strip()
 
 
 def _days(prompt: str) -> int:

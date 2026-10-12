@@ -150,12 +150,14 @@ async def test_wikipedia_images_and_failure_is_soft():
         assert "NomadIQ" in request.headers["User-Agent"]
         return httpx.Response(200, json={"query": {"pages": [
             {"index": 2, "title": "B", "fullurl": "https://w/B"},
-            {"index": 1, "title": "Taj Mahal", "fullurl": "https://w/T", "original": {"source": "https://img/full.jpg", "width": 2000, "height": 1300}, "thumbnail": {"source": "https://img/t.jpg"}},
+            {"index": 3, "title": "Rajasthan", "fullurl": "https://w/R", "thumbnail": {"source": "https://up/thumb/b/1280px-Rajasthan_locator_map.svg.png"}},
+            {"index": 1, "title": "Taj Mahal", "fullurl": "https://w/T", "thumbnail": {"source": "https://up/thumb/a/1280px-Taj.jpg", "width": 1280, "height": 853}},
         ]}})
 
     async with client_for(handler) as http:
         imgs = await WikipediaImageProvider(http).search("Taj Mahal", 3)
-        assert len(imgs) == 1 and imgs[0].url == "https://img/full.jpg" and imgs[0].source_url == "https://w/T"
+        assert len(imgs) == 1 and imgs[0].url == "https://up/thumb/a/1280px-Taj.jpg" and imgs[0].source_url == "https://w/T"
+        assert imgs[0].thumbnail_url == "https://up/thumb/a/480px-Taj.jpg"
     async with client_for(lambda r: httpx.Response(503)) as http:
         assert await WikipediaImageProvider(http).search("x") == []
 

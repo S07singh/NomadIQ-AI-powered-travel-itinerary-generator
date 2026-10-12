@@ -61,7 +61,27 @@ class MockImageProvider(ImageProvider):
         ]
 
 
+DISPLAY_WIDTH = 1280
+THUMB_WIDTH = 480
+
+
+def small_variant(url: str) -> str:
+    """Wikimedia thumbnail URLs embed the width ("/1280px-Name.jpg"); ask for a smaller rendition."""
+    return url.replace(f"/{DISPLAY_WIDTH}px-", f"/{THUMB_WIDTH}px-")
+
+
+NON_PHOTO_HINTS = ("map", "locator", "flag", "logo", "coat_of_arms", "emblem", "seal_of", "diagram", "chart", "signature", ".svg")
+
+
+def is_photo(url: str) -> bool:
+    """Skip maps, flags, logos and other non-photographs that Wikipedia uses as page images."""
+    name = url.rsplit("/", 1)[-1].lower()
+    return not any(hint in name for hint in NON_PHOTO_HINTS)
+
+
 class WikipediaImageProvider(ImageProvider):
+    """Sized thumbnails (not originals, which are often several MB) keep pages fast."""
+
     name = "wikipedia"
 
     def __init__(self, http: httpx.AsyncClient):
@@ -71,7 +91,7 @@ class WikipediaImageProvider(ImageProvider):
         params = {
             "action": "query", "format": "json", "formatversion": "2",
             "generator": "search", "gsrsearch": query, "gsrlimit": str(max(limit, 3)),
-            "prop": "pageimages|info", "piprop": "thumbnail|original", "pithumbsize": "480", "inprop": "url",
+            "prop": "pageimages|info", "piprop": "thumbnail", "pithumbsize": str(DISPLAY_WIDTH), "inprop": "url",
         }
         try:
             resp = await self.http.get("https://en.wikipedia.org/w/api.php", params=params, headers={"User-Agent": USER_AGENT})
@@ -82,15 +102,15 @@ class WikipediaImageProvider(ImageProvider):
         pages = sorted(resp.json().get("query", {}).get("pages", []), key=lambda p: p.get("index", 99))
         images = []
         for page in pages:
-            original = page.get("original")
-            if not original:
+            thumb = page.get("thumbnail")
+            if not thumb or not is_photo(thumb["source"]):
                 continue
             images.append(
                 MediaImage(
-                    url=original["source"],
-                    thumbnail_url=(page.get("thumbnail") or {}).get("source"),
-                    width=original.get("width"),
-                    height=original.get("height"),
+                    url=thumb["source"],
+                    thumbnail_url=small_variant(thumb["source"]),
+                    width=thumb.get("width"),
+                    height=thumb.get("height"),
                     alt=page.get("title", query),
                     attribution="Wikimedia Commons",
                     source="wikipedia",
