@@ -42,7 +42,9 @@ ai_travel_planner_agent_team/
 │   ├── main.py                    # uvicorn entry point
 │   └── requirements.txt
 │
-└── frontend/                      # Next.js 16 + TypeScript frontend
+├── mobile/                        # React Native app (Expo SDK 57, Expo Router), see mobile/README.md
+│
+└── frontend/                      # Next.js 16 website on the same /api/v1
     └── src/
         ├── app/
         │   ├── page.tsx           # Landing / home page
@@ -168,9 +170,9 @@ Create a `.env.local` file:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXTAUTH_SECRET=your_nextauth_secret_here
-NEXTAUTH_URL=http://localhost:3000
 ```
+
+Auth is handled by the backend (JWT), so no NextAuth or database settings are needed.
 
 #### Start the Frontend
 
@@ -207,7 +209,13 @@ curl -X POST localhost:8000/api/v1/trips -H "Authorization: Bearer $TOKEN" -H "C
 curl -N localhost:8000/api/v1/trips/<id>/events -H "Authorization: Bearer $TOKEN"   # live progress
 ```
 
-> The Next.js frontend still calls the v1 (`/api/plan/...`) endpoints and needs migrating to `/api/v1`.
+### 4. Mobile App
+
+```bash
+cd mobile && npm install && npx expo start
+```
+
+See [mobile/README.md](./mobile/README.md) for emulator/phone API addresses.
 
 ---
 

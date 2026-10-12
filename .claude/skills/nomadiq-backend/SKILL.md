@@ -1,6 +1,6 @@
 ---
 name: nomadiq-backend
-description: Work on the NomadIQ AI travel planner backend (FastAPI + MongoDB, shared by the Next.js website and React Native app). Use when adding or changing API routes, Pydantic schemas, feature modules, provider integrations (LLM, Duffel flights, LiteAPI hotels, trains/buses, images, videos, weather, speech, payments), trip planning agents, booking flow, assistant/voice, or backend tests in this repo.
+description: Work on NomadIQ, the AI travel planner: FastAPI + MongoDB backend shared by the Next.js website (frontend/) and the Expo React Native app (mobile/). Use when adding or changing API routes, Pydantic schemas, feature modules, provider integrations (LLM, Duffel flights, LiteAPI hotels, trains/buses, images, videos, weather, speech, payments), trip planning agents, booking flow, assistant/voice, backend tests, or the website and mobile screens that use the API.
 ---
 
 # NomadIQ backend
@@ -53,6 +53,15 @@ LLM_PROVIDER=mock venv/Scripts/python.exe main.py  # no Ollama needed
 ```
 
 Tests: `tests/conftest.py` gives `app`, `client` (base `/api/v1`), `auth` (registered user + headers), `db`, `providers`, helpers `register`, `wait_for_trip`, `future(days)`. To fake a provider in one test, swap `providers.<name>` and restore in `finally`. Every new route needs happy-path, validation, auth/ownership tests.
+
+## Clients (same API)
+
+- **Website** `frontend/` (Next.js 16, Tailwind v4): typed client `src/lib/api.ts` (tokens in localStorage, one shared refresh on 401), SSE progress via fetch stream in `src/lib/progress.ts`.
+- **Mobile** `mobile/` (Expo SDK 57, Expo Router in `src/app/`): client `src/api/client.ts` (expo-secure-store), polls `/trips/{id}/status`. Install packages with `npx expo install`; read versioned Expo docs, don't trust memory. Keep `react-dom` pinned to the exact `react` version.
+- `types.ts`/`format.ts` exist in both apps; change the backend schema → update `docs/API.md` and both copies.
+- Design system ("route sheet"): ink `#14213D`, paper `#F3F5F7`, signal yellow `#FFC83D` (only for the route/line), platform teal `#0F766E` (actions), Overpass type, no all-caps labels, small radii. Trips render as transit lines (days = stations).
+- Wikimedia thumbnails: only standard widths are served (500/960/1280...); other widths return HTTP 400.
+- React effects: never write `useEffect(() => el.scrollIntoView())` as an expression body; scroll methods now return Promises and React will try to call them as cleanup.
 
 ## Git
 
