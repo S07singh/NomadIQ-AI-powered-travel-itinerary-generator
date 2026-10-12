@@ -28,25 +28,18 @@ NomadIQ is a full-stack application with a clear separation between the AI backe
 
 ```
 ai_travel_planner_agent_team/
-├── backend/                       # FastAPI Python backend
-│   ├── agents/
-│   │   ├── destination_agent.py   # Researches attractions & landmarks
-│   │   ├── hotel_agent.py         # Finds and recommends accommodations
-│   │   ├── dining_agent.py        # Discovers restaurants & dining
-│   │   ├── budget_agent.py        # Calculates and breaks down costs
-│   │   └── itinerary_agent.py     # Compiles the final day-by-day plan
-│   ├── api/
-│   │   ├── app.py                 # FastAPI app factory
-│   │   └── routes.py              # All REST API endpoints
-│   ├── config/
-│   │   ├── llm.py                 # Unified LLM provider (Ollama / Gemini)
-│   │   └── logger.py              # Loguru logging setup
-│   ├── models/
-│   │   └── schemas.py             # Pydantic request/response models
-│   ├── services/
-│   │   ├── plan_service.py        # Orchestrates multi-agent plan generation
-│   │   └── db_service.py          # SQLite persistence layer (aiosqlite)
-│   ├── main.py                    # Uvicorn entry point
+├── backend/                       # FastAPI backend (shared by web + mobile)
+│   ├── app/
+│   │   ├── core/                  # config, MongoDB, JWT security, cache, rate limit, jobs, errors
+│   │   ├── common/                # shared Pydantic schemas (money, media, offers, FX)
+│   │   ├── providers/             # swappable integrations: LLM, Duffel, LiteAPI, images,
+│   │   │                          #   videos, weather, speech, payments (+ mocks)
+│   │   ├── modules/               # feature modules: router + schemas + service each
+│   │   │   ├── auth/ users/ trips/ planner/ search/
+│   │   │   └── bookings/ explore/ assistant/ meta/
+│   │   └── main.py                # app factory
+│   ├── tests/                     # 76 tests (real MongoDB, mocked providers)
+│   ├── main.py                    # uvicorn entry point
 │   └── requirements.txt
 │
 └── frontend/                      # Next.js 16 + TypeScript frontend
@@ -137,14 +130,26 @@ OLLAMA_MODEL=llama3.1
 ollama pull llama3.1
 ```
 
+#### Start MongoDB
+
+Local: install MongoDB Community and run `mongod` (default `mongodb://127.0.0.1:27017`).
+Production: set `MONGODB_URI` to your MongoDB Atlas connection string.
+
 #### Start the Backend
 
 ```bash
 python main.py
 ```
 
-The API will be live at **http://localhost:8000**  
-Interactive API docs: **http://localhost:8000/docs**
+The API will be live at **http://localhost:8000/api/v1**
+Interactive API docs: **http://localhost:8000/api/v1/docs**
+
+#### Run the Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q          # needs a local mongod; uses the `nomadiq_test` database
+```
 
 ---
 
@@ -179,50 +184,30 @@ The app will be available at **http://localhost:3000**
 
 ## 🔌 API Reference
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/plan/trigger` | Start async trip plan generation |
-| `GET` | `/api/plan/{id}` | Poll plan status & retrieve results |
-| `GET` | `/api/plans` | List all saved trip plans |
-| `POST` | `/api/chat` | Modify an existing itinerary via AI chat |
-| `GET` | `/api/chat/{id}` | Retrieve chat history for a plan |
+All endpoints live under `/api/v1` and are shared by the website and the mobile app.
+Full reference with every route and Pydantic model: **[docs/API.md](./docs/API.md)**. Product roadmap: **[docs/PRODUCT_PLAN.md](./docs/PRODUCT_PLAN.md)**.
 
-### Example: Trigger a Plan
+| Area | Endpoints |
+|---|---|
+| Auth | `POST /auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/password/change` |
+| Users | `GET/PATCH/DELETE /users/me`, saved travelers, push devices |
+| Trips | `POST/GET /trips`, `GET/PATCH/DELETE /trips/{id}`, `/generate`, `/status`, `/events` (SSE), `/chat`, `/share` |
+| Search | `POST /search/flights`, `/hotels`, `/trains`, `/buses`, `/activities`, `GET /search/airports` |
+| Bookings | `POST /bookings` → `POST /bookings/{id}/confirm` → `/cancel` |
+| Explore | `GET /explore/destination`, `/places`, `/images`, `/videos`, `/weather` |
+| Assistant & Voice | `POST /assistant/messages`, `POST /voice/transcribe`, `POST /voice/assistant` |
 
-```bash
-curl -X POST http://localhost:8000/api/plan/trigger \
-  -H "Content-Type: application/json" \
-  -d '{
-    "travel_plan": {
-      "destination": "Tokyo, Japan",
-      "duration_days": 7,
-      "budget": "moderate",
-      "travel_style": "culture and food"
-    }
-  }'
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Trip plan generation started",
-  "trip_plan_id": "abc123..."
-}
-```
-
-Then poll `GET /api/plan/{trip_plan_id}` every few seconds until `status` is `"completed"`.
-
-### Example: Chat to Modify
+### Example: plan a trip
 
 ```bash
-curl -X POST http://localhost:8000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "trip_plan_id": "abc123...",
-    "message": "Make day 2 more adventurous and add local street food spots"
-  }'
+TOKEN=$(curl -s -X POST localhost:8000/api/v1/auth/register -H "Content-Type: application/json"   -d '{"email":"me@example.com","password":"secret123","name":"Me"}' | jq -r .tokens.access_token)
+
+curl -X POST localhost:8000/api/v1/trips -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json"   -d '{"destination":"Goa, India","start_date":"2026-12-10","duration_days":4,"budget":{"amount":60000,"currency":"INR"}}'
+
+curl -N localhost:8000/api/v1/trips/<id>/events -H "Authorization: Bearer $TOKEN"   # live progress
 ```
+
+> The Next.js frontend still calls the v1 (`/api/plan/...`) endpoints and needs migrating to `/api/v1`.
 
 ---
 
@@ -234,7 +219,10 @@ curl -X POST http://localhost:8000/api/chat \
 | **FastAPI** | ≥ 0.115 | High-performance async REST API |
 | **Uvicorn** | ≥ 0.34 | ASGI server |
 | **Pydantic** | v2 | Data validation & serialization |
-| **aiosqlite** | ≥ 0.20 | Async SQLite database |
+| **MongoDB + PyMongo Async** | 8.x / ≥ 4.13 | Database (local → Atlas) |
+| **PyJWT + bcrypt** | — | Token auth for web & mobile |
+| **Duffel / LiteAPI** | — | Flight & hotel inventory (mock providers until keys) |
+| **Open-Meteo / Wikipedia / YouTube** | — | Weather, geocoding, photos, videos |
 | **Loguru** | ≥ 0.7 | Structured logging |
 | **httpx** | ≥ 0.28 | Async HTTP client |
 | **Ollama / Google Gemini** | — | LLM inference providers |
