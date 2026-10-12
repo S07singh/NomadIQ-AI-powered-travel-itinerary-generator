@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "NomadIQ",
+    "slug": "nomadiq",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.nomadiq.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#14213D",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "app.nomadiq.mobile"
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-image",
+      "expo-font",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "NomadIQ uses the microphone when you hold the talk button to ask the travel assistant."
+        }
+      ],
+      "expo-asset"
+    ],
+    "scheme": "nomadiq",
+    "backgroundColor": "#F3F5F7",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
