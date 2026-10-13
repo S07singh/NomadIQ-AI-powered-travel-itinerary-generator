@@ -1,140 +1,96 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import {
-  Plane,
-  MapPin,
-  Sparkles,
-  MessageSquare,
-  Globe,
-  Zap,
-} from "lucide-react";
+import { HeroRoute } from "@/components/hero-route";
+import { PlacePhoto } from "@/components/photo";
+import { PlannerSentence } from "@/components/planner-sentence";
+import { Page } from "@/components/ui";
+
+const PLACES = [
+  { name: "Jaipur", query: "Hawa Mahal Jaipur", note: "Best from November to February. Four days covers the forts and bazaars." },
+  { name: "Hampi", query: "Hampi Virupaksha Temple", note: "Boulders and ruins. Go in winter, stay near Hampi Bazaar." },
+  { name: "Kyoto", query: "Fushimi Inari Kyoto", note: "Shrines at dawn, markets at noon. Spring and autumn book up early." },
+  { name: "Munnar", query: "Munnar tea plantations", note: "Tea estates and cool air. Three days, ideally by road from Kochi." },
+  { name: "Lisbon", query: "Alfama Lisbon", note: "Hills, trams, custard tarts. Pleasant almost all year." },
+];
+
+const STEPS = [
+  { title: "Give us the outline", body: "Where, how long, roughly what you want to spend. Sights, stays and food are researched side by side, then stitched into days." },
+  { title: "Shape it by talking", body: "Swap a day, make it cheaper, add a night market. Type it or say it, and the route redraws." },
+  { title: "Book the seats", body: "Live fares for flights, trains, buses and hotels. Nothing is booked until you confirm the final price." },
+];
 
 export default function Home() {
   return (
-    <div className="bg-background">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950/20 dark:via-teal-950/20 dark:to-cyan-950/20" />
-        <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-32">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-              <Sparkles className="w-4 h-4" />
-              AI-Powered Travel Planning
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-              Plan Your Dream Trip{" "}
-              <span className="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">
-                in Seconds
-              </span>
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground mb-10 leading-relaxed">
-              Just tell us where you want to go. NomadIQ&apos;s AI agents research
-              destinations, find hotels, discover restaurants, and craft your
-              perfect day-by-day itinerary — all for free.
+    <>
+      <section className="border-b border-rule bg-sheet">
+        <Page className="grid lg:grid-cols-[1.25fr_1fr] gap-12 lg:gap-6 pt-12 pb-16 sm:pt-16 sm:pb-20 items-center">
+          <div>
+            <h1 className="display text-[2.9rem] sm:text-[4.4rem] max-w-[13ch]">Plan the trip. Book the seats.</h1>
+            <p className="mt-5 mb-10 text-lg sm:text-xl text-slate max-w-[48ch]">
+              A day-by-day route with photos, weather and real prices, and the tickets to get there.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/plan">
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 text-base px-8 py-6"
-                >
-                  <Plane className="w-5 h-5 mr-2" />
-                  Start Planning — It&apos;s Free
-                </Button>
-              </Link>
-              <Link href="/plans">
-                <Button variant="outline" size="lg" className="text-base px-8 py-6">
-                  View My Trips
-                </Button>
-              </Link>
-            </div>
+            <PlannerSentence />
           </div>
-        </div>
+          <div className="hidden sm:flex justify-center lg:justify-end">
+            <HeroRoute />
+          </div>
+        </Page>
       </section>
 
-      {/* How it works */}
-      <section className="max-w-6xl mx-auto px-4 py-20">
-        <h2 className="text-3xl font-bold text-center mb-4">How It Works</h2>
-        <p className="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
-          Three simple steps to your perfect itinerary
-        </p>
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            {
-              step: "1",
-              title: "Tell Us Your Dream",
-              desc: "Enter your destination, dates, budget, and travel style. Our smart form takes just 60 seconds.",
-              icon: MapPin,
-              color: "from-emerald-500 to-emerald-600",
-            },
-            {
-              step: "2",
-              title: "AI Agents Go to Work",
-              desc: "5 specialized AI agents research destinations, hotels, restaurants, activities, and budget simultaneously.",
-              icon: Zap,
-              color: "from-teal-500 to-teal-600",
-            },
-            {
-              step: "3",
-              title: "Get Your Itinerary",
-              desc: "Receive a complete day-by-day plan. Chat with AI to modify anything — add nightlife, change hotels, adjust budget.",
-              icon: MessageSquare,
-              color: "from-cyan-500 to-cyan-600",
-            },
-          ].map((item) => (
-            <div key={item.step} className="text-center group">
-              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mx-auto mb-5 shadow-lg group-hover:scale-110 transition-transform`}>
-                <item.icon className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
-              <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="bg-muted/30 py-20">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Why NomadIQ?
-          </h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { icon: Sparkles, title: "Multi-Agent AI", desc: "5 specialized AI agents collaborate to create comprehensive plans no single chatbot can match." },
-              { icon: MessageSquare, title: "Chat to Modify", desc: "Don't like something? Just say \"make day 2 more adventurous\" and watch the plan update instantly." },
-              { icon: Globe, title: "Any Destination", desc: "From Paris to Patagonia — get detailed local knowledge for any destination worldwide." },
-              { icon: MapPin, title: "Day-by-Day Plans", desc: "Morning, afternoon, evening — every hour is planned with realistic timing and travel between spots." },
-              { icon: Zap, title: "Instant & Free", desc: "No signup required. No credit card. Complete itineraries generated in under a minute." },
-              { icon: Plane, title: "Everything Included", desc: "Hotels, restaurants, attractions, budget breakdown, local tips — all in one beautiful plan." },
-            ].map((feat) => (
-              <div key={feat.title} className="bg-background rounded-xl p-6 border hover:shadow-lg transition-shadow">
-                <feat.icon className="w-8 h-8 text-emerald-500 mb-4" />
-                <h3 className="font-semibold text-lg mb-2">{feat.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{feat.desc}</p>
-              </div>
+      <section>
+        <Page className="pt-16 sm:pt-20">
+          <div className="flex items-end justify-between gap-6 mb-8">
+            <h2 className="heading text-3xl sm:text-4xl">Where people are going</h2>
+            <Link href="/explore" className="font-bold text-platform hover:underline underline-offset-4 shrink-0">
+              Explore a place
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-x-5 gap-y-8">
+            {PLACES.map((p, i) => (
+              <Link
+                key={p.name}
+                href={`/explore/${encodeURIComponent(p.name)}`}
+                className={i === 0 ? "col-span-2 lg:col-span-3 lg:row-span-2 group" : "col-span-1 lg:col-span-3 xl:col-span-3 group"}
+              >
+                <PlacePhoto query={p.query} className={i === 0 ? "aspect-[4/3] lg:aspect-auto lg:h-[calc(100%-5.5rem)] rounded-sm" : "aspect-[16/10] rounded-sm"} />
+                <h3 className="mt-3 heading text-xl group-hover:underline underline-offset-4 decoration-signal decoration-[3px]">{p.name}</h3>
+                <p className="text-slate text-[0.95rem] max-w-[46ch]">{p.note}</p>
+              </Link>
             ))}
           </div>
-        </div>
+        </Page>
       </section>
 
-      {/* CTA */}
-      <section className="max-w-6xl mx-auto px-4 py-20 text-center">
-        <h2 className="text-3xl font-bold mb-4">
-          Ready to Plan Your Next Adventure?
-        </h2>
-        <p className="text-muted-foreground text-lg mb-8">
-          Join thousands of travelers who plan smarter with AI.
-        </p>
-        <Link href="/plan">
-          <Button
-            size="lg"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg text-base px-10 py-6"
-          >
-            <Plane className="w-5 h-5 mr-2" /> Plan My Trip Now
-          </Button>
-        </Link>
+      <section>
+        <Page className="pt-24">
+          <h2 className="heading text-3xl sm:text-4xl max-w-[22ch]">From a rough idea to a seat number</h2>
+          <ol className="mt-12 relative grid md:grid-cols-3 gap-10 md:gap-8">
+            <span aria-hidden className="hidden md:block absolute left-2 right-[30%] top-[7px] h-[6px] rounded-full bg-signal" />
+            {STEPS.map((s, i) => (
+              <li key={s.title} className="relative">
+                <span aria-hidden className={`block w-5 h-5 rounded-full border-[4px] border-ink ${i === 2 ? "bg-sheet" : "bg-signal"}`} />
+                <h3 className="heading text-xl mt-5">{s.title}</h3>
+                <p className="mt-2 text-slate max-w-[38ch]">{s.body}</p>
+              </li>
+            ))}
+          </ol>
+        </Page>
       </section>
-    </div>
+
+      <section>
+        <Page className="pt-24">
+          <div className="bg-ink text-white rounded-md px-6 py-10 sm:px-12 sm:py-14 grid md:grid-cols-[1fr_auto] gap-8 items-center">
+            <div>
+              <h2 className="heading text-3xl sm:text-4xl max-w-[20ch]">&ldquo;Find me a sleeper to Goa on Friday.&rdquo;</h2>
+              <p className="mt-4 text-white/75 text-lg max-w-[52ch]">
+                Ask the assistant in English or Hindi, by typing or holding the mic. It searches, compares and holds the fare. You tap confirm.
+              </p>
+            </div>
+            <Link href="/assistant" className="inline-flex h-12 items-center rounded-md bg-signal px-6 font-extrabold text-ink hover:bg-signal-deep">
+              Talk to the assistant
+            </Link>
+          </div>
+        </Page>
+      </section>
+    </>
   );
 }

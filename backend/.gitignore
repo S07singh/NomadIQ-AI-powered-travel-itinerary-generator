@@ -34,3 +34,5 @@ Thumbs.db
 
 # Byte-compiled
 *.pyc
+# Test cache
+.pytest_cache/
