@@ -67,6 +67,8 @@ class BookingService:
                 return to_booking_out(existing)
 
         offer = await self.offers.get(data.offer_id)
+        if not offer.bookable:
+            raise AppError("This fare is booked on the provider's site", code="external_booking", status_code=409, details={"deep_link": offer.deep_link})
         if data.traveler_ids:
             saved = await UserService(self.db).get_travelers_by_ids(user, data.traveler_ids)
             travelers = [TravelerInfo.model_validate(t) for t in saved]

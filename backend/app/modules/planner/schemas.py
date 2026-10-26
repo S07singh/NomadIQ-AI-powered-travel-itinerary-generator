@@ -17,7 +17,9 @@ from typing import Literal
 
 from pydantic import Field
 
-from app.common.schemas import APIModel, MediaImage, Place, VideoLink, WeatherDay
+from app.common.schemas import APIModel, ExternalLink, MediaImage, Place, VideoLink, WeatherDay
+from app.common.travel import FlightOffer
+from app.providers.base import Airport
 
 TimeOfDay = Literal["morning", "afternoon", "evening", "night"]
 ItemKind = Literal["activity", "meal", "transport", "rest", "hotel"]
@@ -30,6 +32,14 @@ def _marker(prompt: str, name: str, default: str = "") -> str:
 
 def _dest(prompt: str) -> str:
     return _marker(prompt, "DESTINATION", "the destination").split(",")[0].strip()
+
+
+def _web_urls(prompt: str, section: str) -> list[str]:
+    """URLs listed under a WEB_RESULTS block (used by mock examples to mimic grounded output)."""
+    block = prompt.split(f"{section}:", 1)
+    if len(block) < 2:
+        return []
+    return re.findall(r"URL: (https?://\S+)", block[1].split(f"END_{section}", 1)[0])
 
 
 def _days(prompt: str) -> int:
@@ -60,6 +70,7 @@ class AttractionDraft(APIModel):
     visit_duration_hours: float | None = None
     best_time: str = ""
     booking_required: bool = False
+    source_url: str | None = Field(default=None, description="URL from WEB_RESULTS that supports this place; null if none")
 
 
 class DestinationDraft(APIModel):
@@ -74,7 +85,8 @@ class DestinationDraft(APIModel):
     def mock_example(cls, prompt: str) -> "DestinationDraft":
         d = _dest(prompt)
         cats = [("Old Fort", "landmark", 10), ("City Museum", "museum", 8), ("Sunset Point", "viewpoint", 0), ("Central Market", "market", 0), ("Riverside Park", "nature", 0), ("Heritage Temple", "temple", 2)]
-        return cls(
+        urls = _web_urls(prompt, "WEB_RESULTS")
+        draft = cls(
             summary=f"{d} blends history, food and scenery — ideal for a relaxed yet varied trip.",
             highlights=[f"Sunset views over {d}", "Local street food", "Historic old town"],
             attractions=[
@@ -85,6 +97,11 @@ class DestinationDraft(APIModel):
             packing_list=["Comfortable walking shoes", "Sunscreen", "Reusable water bottle", "Power bank"],
             travel_tips=["Carry some cash for small vendors", "Start sightseeing early to avoid crowds"],
         )
+        for i, a in enumerate(draft.attractions):
+            a.source_url = urls[i % len(urls)] if urls else None
+        if draft.attractions:
+            draft.attractions[-1].source_url = "https://made-up.example/not-in-results"  # exercised by URL validation
+        return draft
 
 
 class HotelDraft(APIModel):
@@ -119,6 +136,7 @@ class RestaurantDraft(APIModel):
     avg_cost_per_person: float | None = None
     must_try: list[str] = []
     dietary_options: list[str] = []
+    source_url: str | None = Field(default=None, description="URL from WEB_RESULTS about this restaurant; null if none")
 
 
 class DiningDraft(APIModel):
@@ -128,7 +146,8 @@ class DiningDraft(APIModel):
     @classmethod
     def mock_example(cls, prompt: str) -> "DiningDraft":
         d = _dest(prompt)
-        return cls(
+        urls = _web_urls(prompt, "WEB_RESULTS")
+        draft = cls(
             restaurants=[
                 RestaurantDraft(name=f"{d} Street Food Lane", cuisine="Street food", area="Market", price_level=1, avg_cost_per_person=6, must_try=["Local snack platter"], dietary_options=["vegetarian"]),
                 RestaurantDraft(name=f"Spice Route {d}", cuisine="Regional", area="Central", price_level=2, avg_cost_per_person=15, must_try=["House curry"], dietary_options=["vegetarian", "vegan"]),
@@ -136,6 +155,9 @@ class DiningDraft(APIModel):
             ],
             local_dishes=["Regional thali", "Fresh seafood", "Local sweets"],
         )
+        for i, r in enumerate(draft.restaurants):
+            r.source_url = urls[i % len(urls)] if urls else None
+        return draft
 
 
 class ItineraryItemDraft(APIModel):
@@ -205,6 +227,7 @@ class Attraction(AttractionDraft):
 class HotelSuggestion(HotelDraft):
     maps_url: str | None = None
     images: list[MediaImage] = []
+    links: list[ExternalLink] = Field(default_factory=list, description="Booking-site searches for this hotel and dates")
     search_hint: dict | None = Field(default=None, description="Prefilled body for POST /search/hotels to book live rates")
 
 
@@ -228,7 +251,7 @@ class DayPlan(APIModel):
 
 
 class BudgetLine(APIModel):
-    category: Literal["accommodation", "food", "activities", "local_transport", "misc"]
+    category: Literal["flights", "accommodation", "food", "activities", "local_transport", "misc"]
     amount: float
     note: str = ""
 
@@ -242,6 +265,22 @@ class BudgetBreakdown(APIModel):
     budget_limit: float | None = None
     within_budget: bool | None = None
     tips: list[str] = []
+
+
+class WebSource(APIModel):
+    title: str
+    url: str
+
+
+class PlanFlights(APIModel):
+    """Live flight options to and from the destination (read-only prices + booking links)."""
+
+    origin_airport: Airport | None = None
+    destination_airport: Airport | None = None
+    outbound: list[FlightOffer] = []
+    inbound: list[FlightOffer] = []
+    links: list[ExternalLink] = []
+    note: str = ""
 
 
 class TripPlan(APIModel):
@@ -261,6 +300,8 @@ class TripPlan(APIModel):
     packing_list: list[str] = []
     travel_tips: list[str] = []
     weather: list[WeatherDay] = []
+    flights: PlanFlights | None = None
+    sources: list[WebSource] = Field(default_factory=list, description="Web pages the research was based on")
     generated_at: datetime | None = None
     generation_ms: int | None = None
     ai_model: str | None = None

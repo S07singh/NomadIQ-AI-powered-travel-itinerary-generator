@@ -21,6 +21,20 @@ MAX_CONCURRENCY = 8
 GALLERY_SIZE = 6
 
 
+STOP_WORDS = {"the", "and", "of", "in", "at", "visit", "tour", "temple", "city", "old", "new", "market", "park", "point", "lake"}
+
+
+def relevant_images(images: list[MediaImage], place: str, city: str) -> list[MediaImage]:
+    """Search by name can return a portrait or an unrelated building. Keep a photo only when its
+    page title shares a distinctive word with the place name; no photo beats a wrong photo."""
+    city_words = {w.lower() for w in city.replace(",", " ").split()}
+    words = {w.lower().strip(",.()'") for w in place.split()}
+    key = {w for w in words if len(w) > 3 and w not in STOP_WORDS and w not in city_words}
+    if not key:
+        return images[:1]
+    return [img for img in images if key & {w.lower().strip(",.()'") for w in img.alt.split()}]
+
+
 def dedupe_images(images: list[MediaImage]) -> list[MediaImage]:
     seen: set[str] = set()
     out = []
@@ -118,11 +132,14 @@ async def enrich_plan(plan: TripPlan, destination: str, start: date | None, end:
 
     plan.videos = [v for group in video_groups for v in group]
     for a, imgs in zip(plan.attractions, attr_images):
-        a.images = imgs
+        a.images = relevant_images(imgs, a.name, city)
     for a, vids in zip(plan.attractions, attr_videos):
         a.videos = vids
     # Landmark photos matched to named attractions are more relevant than a generic search.
-    plan.gallery = dedupe_images([a.images[0] for a in plan.attractions if a.images] + gallery)[:GALLERY_SIZE]
+    # General city search can return portraits or office blocks; keep only pages that name the city.
+    city_words = {w.lower() for w in city.split() if len(w) > 2}
+    on_topic = [img for img in gallery if city_words & {w.lower().strip(",.()'") for w in img.alt.split()}]
+    plan.gallery = dedupe_images([a.images[0] for a in plan.attractions if a.images] + on_topic)[:GALLERY_SIZE]
     plan.cover_image = plan.gallery[0] if plan.gallery else None
 
     # Reuse attraction photos on itinerary items that visit them.

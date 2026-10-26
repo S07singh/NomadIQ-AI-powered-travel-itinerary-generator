@@ -122,6 +122,48 @@ class OllamaLLM(LLMProvider):
         return await self._chat(prompt, system, temperature, schema)
 
 
+class OpenRouterLLM(LLMProvider):
+    """Any hosted model (Gemini, GPT, Claude, Llama...) through OpenRouter's OpenAI-compatible API."""
+
+    name = "openrouter"
+    URL = "https://openrouter.ai/api/v1/chat/completions"
+
+    def __init__(self, http: httpx.AsyncClient, api_key: str, model: str, timeout: float):
+        if not api_key:
+            raise RuntimeError("OPENROUTER_API_KEY is required for LLM_PROVIDER=openrouter")
+        self.http, self.key, self.model, self.timeout = http, api_key, model, timeout
+
+    async def _chat(self, prompt: str, system: str, temperature: float, json_mode: bool) -> str:
+        body: dict = {
+            "model": self.model,
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
+            "temperature": temperature,
+        }
+        if json_mode:
+            body["response_format"] = {"type": "json_object"}
+        try:
+            resp = await self.http.post(
+                self.URL,
+                json=body,
+                headers={"Authorization": f"Bearer {self.key}", "X-Title": "NomadIQ"},
+                timeout=self.timeout,
+            )
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            code = "llm_rate_limited" if exc.response.status_code == 429 else "llm_unavailable"
+            raise ProviderError(f"OpenRouter error {exc.response.status_code}: {exc.response.text[:200]}", code=code)
+        except httpx.HTTPError as exc:
+            raise ProviderError(f"OpenRouter request failed: {exc}", code="llm_unavailable")
+        choices = resp.json().get("choices") or [{}]
+        return (choices[0].get("message") or {}).get("content") or ""
+
+    async def generate(self, prompt, system="", temperature=0.7):
+        return await self._chat(prompt, system, temperature, False)
+
+    async def _generate_json_text(self, prompt, system, schema, temperature):
+        return await self._chat(prompt, system, temperature, True)
+
+
 class GeminiLLM(LLMProvider):
     name = "gemini"
 

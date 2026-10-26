@@ -7,7 +7,7 @@ import httpx
 from app.core.config import Settings
 from app.core.exceptions import GoneError
 from app.providers.base import ActivityProvider, FlightProvider, GroundProvider, HotelProvider, InventoryProvider
-from app.providers.llm import GeminiLLM, LLMProvider, MockLLM, OllamaLLM
+from app.providers.llm import GeminiLLM, LLMProvider, MockLLM, OllamaLLM, OpenRouterLLM
 from app.providers.media import (
     ImageProvider,
     KnowledgeProvider,
@@ -24,6 +24,7 @@ from app.providers.media import (
 )
 from app.providers.mock_inventory import MockActivityProvider, MockFlightProvider, MockGroundProvider, MockHotelProvider
 from app.providers.payments import MockPaymentProvider, PaymentProvider
+from app.providers.search import ExaSearch, MockWebSearch, NoWebSearch, TavilySearch, WebSearchProvider
 from app.providers.speech import DeepgramSpeechProvider, MockSpeechProvider, OpenAISpeechProvider, SpeechProvider
 from app.providers.weather import MockWeatherProvider, OpenMeteoProvider, WeatherProvider
 
@@ -41,6 +42,7 @@ class Providers:
     weather: WeatherProvider
     speech: SpeechProvider
     payments: PaymentProvider
+    search: WebSearchProvider
 
     def inventory_for(self, provider_name: str, kind: str) -> InventoryProvider:
         """Route a booking to the provider instance that issued the offer."""
@@ -59,7 +61,9 @@ class Providers:
 
 def build_providers(settings: Settings, http: httpx.AsyncClient) -> Providers:
     llm: LLMProvider
-    if settings.llm_provider == "gemini":
+    if settings.llm_provider == "openrouter":
+        llm = OpenRouterLLM(http, settings.openrouter_api_key, settings.openrouter_model, settings.llm_timeout_seconds)
+    elif settings.llm_provider == "gemini":
         llm = GeminiLLM(settings.google_api_key, settings.gemini_model)
     elif settings.llm_provider == "ollama":
         llm = OllamaLLM(http, settings.ollama_base_url, settings.ollama_model, settings.llm_timeout_seconds)
@@ -70,6 +74,10 @@ def build_providers(settings: Settings, http: httpx.AsyncClient) -> Providers:
         from app.providers.duffel import DuffelFlightProvider
 
         flights: FlightProvider = DuffelFlightProvider(http, settings.duffel_api_token)
+    elif settings.flight_provider == "google_flights":
+        from app.providers.google_flights import GoogleFlightsProvider
+
+        flights = GoogleFlightsProvider()
     else:
         flights = MockFlightProvider()
 
@@ -102,6 +110,13 @@ def build_providers(settings: Settings, http: httpx.AsyncClient) -> Providers:
         "mock": MockSpeechProvider,
     }[settings.speech_provider]()
 
+    search: WebSearchProvider = {
+        "tavily": lambda: TavilySearch(http, settings.tavily_api_key),
+        "exa": lambda: ExaSearch(http, settings.exa_api_key),
+        "mock": MockWebSearch,
+        "none": NoWebSearch,
+    }[settings.search_provider]()
+
     return Providers(
         llm=llm,
         flights=flights,
@@ -114,4 +129,5 @@ def build_providers(settings: Settings, http: httpx.AsyncClient) -> Providers:
         weather=weather,
         speech=speech,
         payments=MockPaymentProvider(),
+        search=search,
     )

@@ -11,6 +11,8 @@ bcrypt>=4.2.0
 httpx>=0.28.0
 loguru>=0.7.3
 python-dotenv>=1.1.0
+fast-flights>=3.1.0       # Google Flights prices (FLIGHT_PROVIDER=google_flights)
+airportsdata>=20250101    # offline city -> airport lookup
 
 # Only when LLM_PROVIDER=gemini
 google-genai>=1.18.0

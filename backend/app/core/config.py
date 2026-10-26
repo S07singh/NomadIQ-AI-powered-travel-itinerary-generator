@@ -9,7 +9,7 @@ production.
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_JWT_SECRET = "dev-only-change-me-dev-only-change-me"
@@ -42,15 +42,17 @@ class Settings(BaseSettings):
     rate_limit_auth_per_minute: int = 10
 
     # ─── LLM ──────────────────────────────────────────────
-    llm_provider: Literal["mock", "ollama", "gemini"] = "ollama"
+    llm_provider: Literal["mock", "ollama", "gemini", "openrouter"] = "ollama"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1"
     google_api_key: str = ""
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_model: str = "gemini-2.5-flash"
+    openrouter_api_key: str = ""
+    openrouter_model: str = "google/gemini-2.5-flash"
     llm_timeout_seconds: float = 180.0
 
     # ─── Booking providers ────────────────────────────────
-    flight_provider: Literal["mock", "duffel"] = "mock"
+    flight_provider: Literal["mock", "duffel", "google_flights"] = "mock"
     duffel_api_token: str = ""
     hotel_provider: Literal["mock", "liteapi"] = "mock"
     liteapi_api_key: str = ""
@@ -67,6 +69,12 @@ class Settings(BaseSettings):
     youtube_api_key: str = ""
     weather_provider: Literal["mock", "open_meteo"] = "open_meteo"  # also used for geocoding
     knowledge_provider: Literal["mock", "wikipedia"] = "wikipedia"
+
+    # ─── Web search grounding (real places + source links) ─
+    search_provider: Literal["none", "mock", "tavily", "exa"] = "none"
+    tavily_api_key: str = ""
+    exa_api_key: str = ""
+    plan_flights: bool = Field(default=True, description="Include live flight options in generated plans")
 
     # ─── Voice ────────────────────────────────────────────
     speech_provider: Literal["mock", "deepgram", "openai"] = "mock"

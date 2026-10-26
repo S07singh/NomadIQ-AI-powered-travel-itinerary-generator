@@ -95,6 +95,11 @@ class GeoPoint(APIModel):
     lng: float = Field(ge=-180, le=180)
 
 
+class ExternalLink(APIModel):
+    label: str
+    url: str
+
+
 class Place(APIModel):
     name: str
     country: str | None = None

@@ -57,6 +57,8 @@ MOCK_PLACES = {
     "paris": Place(name="Paris", country="France", country_code="FR", region="Île-de-France", lat=48.8566, lng=2.3522, timezone="Europe/Paris"),
     "tokyo": Place(name="Tokyo", country="Japan", country_code="JP", region="Tokyo", lat=35.6762, lng=139.6503, timezone="Asia/Tokyo"),
     "jaipur": Place(name="Jaipur", country="India", country_code="IN", region="Rajasthan", lat=26.9124, lng=75.7873, timezone="Asia/Kolkata"),
+    "bengaluru": Place(name="Bengaluru", country="India", country_code="IN", region="Karnataka", lat=12.9716, lng=77.5946, timezone="Asia/Kolkata"),
+    "new delhi": Place(name="New Delhi", country="India", country_code="IN", region="Delhi", lat=28.6139, lng=77.209, timezone="Asia/Kolkata"),
 }
 
 

@@ -133,6 +133,7 @@ class BaseOffer(APIModel):
     price: Money
     refundable: bool = False
     expires_at: datetime | None = None
+    bookable: bool = Field(default=True, description="False when the fare must be booked on the provider's site (deep_link)")
     deep_link: str | None = Field(default=None, description="Provider page if in-app booking is unavailable")
 
 

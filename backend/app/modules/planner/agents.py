@@ -17,6 +17,15 @@ from app.providers.llm import LLMProvider
 
 PACE_ITEMS = {"relaxed": "2-3", "moderate": "3-4", "packed": "4-6"}
 
+GROUNDING = (
+    "Base your picks on WEB_RESULTS: prefer places those pages mention, and use their details (prices, hours, tips). "
+    "Set source_url to the exact URL of the result that mentions the place, or null. Never invent URLs."
+)
+
+
+def _with_web(prompt: str, web: str) -> str:
+    return f"{prompt}\n\n{web}\n\n{GROUNDING}" if web else prompt
+
 
 def trip_brief(t: TripInputs) -> str:
     """Compact, marker-style brief. Markers (KEY: value) keep small models on track."""
@@ -41,7 +50,7 @@ def trip_brief(t: TripInputs) -> str:
     return "\n".join(lines)
 
 
-async def destination_agent(llm: LLMProvider, t: TripInputs) -> DestinationDraft:
+async def destination_agent(llm: LLMProvider, t: TripInputs, web: str = "") -> DestinationDraft:
     prompt = (
         f"{trip_brief(t)}\n\n"
         f"Research {t.destination} for this traveler. Return a 2-3 sentence summary, 3-5 highlights, "
@@ -49,6 +58,7 @@ async def destination_agent(llm: LLMProvider, t: TripInputs) -> DestinationDraft
         f"local practical info, a short packing list for the season and 3-6 travel tips. "
         f"All costs per person in {t.currency}. Use real place names only."
     )
+    prompt = _with_web(prompt, web)
     return await llm.generate_json(prompt, DestinationDraft, system="You are an expert local travel researcher.", temperature=0.6)
 
 
@@ -61,12 +71,13 @@ async def hotel_agent(llm: LLMProvider, t: TripInputs) -> HotelsDraft:
     return await llm.generate_json(prompt, HotelsDraft, system="You are a hotel expert who knows real properties.", temperature=0.4)
 
 
-async def dining_agent(llm: LLMProvider, t: TripInputs) -> DiningDraft:
+async def dining_agent(llm: LLMProvider, t: TripInputs, web: str = "") -> DiningDraft:
     prompt = (
         f"{trip_brief(t)}\n\n"
         f"Recommend 4-6 real restaurants/food spots in {t.destination} (include street food and one special-occasion place) "
         f"respecting dietary needs, plus 3-6 local dishes to try. avg_cost_per_person in {t.currency}."
     )
+    prompt = _with_web(prompt, web)
     return await llm.generate_json(prompt, DiningDraft, system="You are a local food guide.", temperature=0.6)
 
 
