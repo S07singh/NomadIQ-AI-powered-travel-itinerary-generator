@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Checkout } from "@/components/checkout";
+import { ExternalBook } from "@/components/external-book";
 import { OfferRow } from "@/components/offers";
 import { Button, Field, Loading, Notice, Page, PageTitle, SelectField } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
@@ -179,7 +180,7 @@ function SearchInner() {
                   <li key={offer.offer_id} className={clsx("py-6", selected === offer.offer_id && "bg-sheet -mx-4 px-4 sm:-mx-6 sm:px-6")}>
                     <OfferRow
                       offer={offer}
-                      action={selected === offer.offer_id ? null : <Button variant="quiet" onClick={() => setSelected(offer.offer_id)}>Select</Button>}
+                      action={!offer.bookable ? <ExternalBook offer={offer} /> : selected === offer.offer_id ? null : <Button variant="quiet" onClick={() => setSelected(offer.offer_id)}>Select</Button>}
                     />
                     {selected === offer.offer_id ? <Checkout offer={offer} onClose={() => setSelected(null)} /> : null}
                   </li>

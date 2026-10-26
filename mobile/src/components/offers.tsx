@@ -33,7 +33,8 @@ function headline(offer: AnyOffer): { title: string; sub: string } {
     case "flight": {
       const f = offer as FlightOffer;
       const carriers = Array.from(new Set(f.slices.flatMap((s) => s.segments.map((g) => g.carrier))));
-      return { title: carriers.join(", "), sub: `${f.slices[0].segments.map((g) => g.flight_number).join(", ")}, ${shortDate(f.slices[0].departure_at)}` };
+      const numbers = f.slices[0].segments.map((g) => g.flight_number).filter((n) => /^[A-Z0-9]{2}\s?\d{1,4}$/.test(n)).join(", ");
+      return { title: carriers.join(", "), sub: [numbers, shortDate(f.slices[0].departure_at)].filter(Boolean).join(", ") };
     }
     case "train":
     case "bus": {

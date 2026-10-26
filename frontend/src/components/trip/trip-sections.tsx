@@ -2,9 +2,10 @@ import Link from "next/link";
 import { ExternalLink, MapPin, Play } from "lucide-react";
 import { currencySymbol, money } from "@/lib/format";
 import type { Trip, TripPlan } from "@/lib/types";
+import { hostname } from "../external-book";
 import { Photo } from "../photo";
 
-const LINE_LABELS = { accommodation: "Stays", food: "Food", activities: "Things to do", local_transport: "Getting around", misc: "Buffer" } as const;
+const LINE_LABELS = { flights: "Flights", accommodation: "Stays", food: "Food", activities: "Things to do", local_transport: "Getting around", misc: "Buffer" } as const;
 
 export function Stays({ plan, currency }: { plan: TripPlan; currency: string }) {
   if (!plan.hotels.length) return <p className="text-slate">No stays suggested. Search live hotel prices instead.</p>;
@@ -22,8 +23,13 @@ export function Stays({ plan, currency }: { plan: TripPlan; currency: string }) 
               </p>
               {h.why ? <p className="mt-2 max-w-[60ch]">{h.why}</p> : null}
               {h.amenities.length ? <p className="mt-1 text-sm text-slate">{h.amenities.join(", ")}</p> : null}
-              <div className="mt-3 flex gap-5 text-sm font-bold">
+              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm font-bold">
                 <Link href={searchHref} className="text-platform hover:underline underline-offset-4">Check live prices</Link>
+                {h.links.map((l) => (
+                  <a key={l.url} href={l.url} target="_blank" rel="noreferrer" className="text-platform hover:underline underline-offset-4">
+                    {l.label}
+                  </a>
+                ))}
                 {h.maps_url ? (
                   <a href={h.maps_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-platform hover:underline underline-offset-4">
                     <MapPin size={14} aria-hidden /> Map
@@ -63,11 +69,18 @@ export function Food({ plan, currency }: { plan: TripPlan; currency: string }) {
             <p className="text-slate">{[r.cuisine, r.area].filter(Boolean).join(", ")}</p>
             {r.must_try.length ? <p className="mt-2">Order: {r.must_try.join(", ")}</p> : null}
             {r.avg_cost_per_person ? <p className="text-sm text-slate tabular">About {money(r.avg_cost_per_person, currency)} a person</p> : null}
-            {r.maps_url ? (
-              <a href={r.maps_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-sm font-bold text-platform hover:underline underline-offset-4">
-                <MapPin size={14} aria-hidden /> Map
-              </a>
-            ) : null}
+            <div className="mt-2 flex flex-wrap gap-x-4 text-sm font-bold">
+              {r.maps_url ? (
+                <a href={r.maps_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-platform hover:underline underline-offset-4">
+                  <MapPin size={14} aria-hidden /> Map
+                </a>
+              ) : null}
+              {r.source_url ? (
+                <a href={r.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-platform hover:underline underline-offset-4">
+                  <ExternalLink size={14} aria-hidden /> Read more on {hostname(r.source_url)}
+                </a>
+              ) : null}
+            </div>
           </li>
         ))}
       </ul>
@@ -152,6 +165,20 @@ export function GoodToKnow({ plan, trip }: { plan: TripPlan; trip: Trip }) {
             <ul className="space-y-2 list-disc pl-5">{plan.travel_tips.map((t) => <li key={t}>{t}</li>)}</ul>
           </>
         ) : null}
+        {plan.sources.length ? (
+          <>
+            <h3 className="heading text-xl mt-10 mb-1">Where this came from</h3>
+            <p className="text-sm text-slate mb-3">The planner read these pages before writing your route.</p>
+            <ol className="space-y-1.5 list-decimal pl-5 text-[0.95rem]">
+              {plan.sources.map((s) => (
+                <li key={s.url}>
+                  <a href={s.url} target="_blank" rel="noreferrer" className="hover:underline underline-offset-4">{s.title}</a>
+                  <span className="text-slate">, {hostname(s.url)}</span>
+                </li>
+              ))}
+            </ol>
+          </>
+        ) : null}
       </div>
       <div>
         {plan.packing_list.length ? (
@@ -205,7 +232,11 @@ export function Sights({ plan }: { plan: TripPlan }) {
                 <Play size={14} aria-hidden /> Videos
               </a>
             ) : null}
-            {a.images[0]?.source_url ? (
+            {a.source_url ? (
+              <a href={a.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-platform hover:underline underline-offset-4">
+                <ExternalLink size={14} aria-hidden /> Read more on {hostname(a.source_url)}
+              </a>
+            ) : a.images[0]?.source_url ? (
               <a href={a.images[0].source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-slate hover:underline underline-offset-4">
                 <ExternalLink size={14} aria-hidden /> About
               </a>

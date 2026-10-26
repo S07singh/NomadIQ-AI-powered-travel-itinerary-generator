@@ -15,6 +15,8 @@ export type MediaImage = {
   source_url?: string | null;
 };
 export type VideoLink = { title: string; url: string; thumbnail_url?: string | null; channel?: string | null; source: string };
+export type ExternalLink = { label: string; url: string };
+export type WebSource = { title: string; url: string };
 export type Place = { name: string; country?: string | null; country_code?: string | null; region?: string | null; lat: number; lng: number; timezone?: string | null };
 export type WeatherCondition = "clear" | "partly_cloudy" | "cloudy" | "fog" | "drizzle" | "rain" | "snow" | "storm" | "unknown";
 export type WeatherDay = {
@@ -84,6 +86,7 @@ export type Attraction = {
   visit_duration_hours?: number | null;
   best_time: string;
   booking_required: boolean;
+  source_url?: string | null;
   maps_url?: string | null;
   images: MediaImage[];
   videos: VideoLink[];
@@ -98,6 +101,7 @@ export type HotelSuggestion = {
   why: string;
   maps_url?: string | null;
   images: MediaImage[];
+  links: ExternalLink[];
   search_hint?: Record<string, unknown> | null;
 };
 export type RestaurantSuggestion = {
@@ -109,9 +113,10 @@ export type RestaurantSuggestion = {
   avg_cost_per_person?: number | null;
   must_try: string[];
   dietary_options: string[];
+  source_url?: string | null;
   maps_url?: string | null;
 };
-export type BudgetLine = { category: "accommodation" | "food" | "activities" | "local_transport" | "misc"; amount: number; note: string };
+export type BudgetLine = { category: "flights" | "accommodation" | "food" | "activities" | "local_transport" | "misc"; amount: number; note: string };
 export type BudgetBreakdown = {
   currency: string;
   total: number;
@@ -148,7 +153,17 @@ export type TripPlan = {
   packing_list: string[];
   travel_tips: string[];
   weather: WeatherDay[];
+  flights?: PlanFlights | null;
+  sources: WebSource[];
   generation_ms?: number | null;
+};
+export type PlanFlights = {
+  origin_airport?: Airport | null;
+  destination_airport?: Airport | null;
+  outbound: FlightOffer[];
+  inbound: FlightOffer[];
+  links: ExternalLink[];
+  note: string;
 };
 export type TripInputs = {
   title?: string | null;
@@ -191,7 +206,7 @@ export type TripChatResponse = { reply: TripMessage; plan_updated: boolean; trip
 
 // ─── Search / offers ────────────────────────────────
 export type OfferKind = "flight" | "hotel" | "train" | "bus" | "activity";
-type BaseOffer = { offer_id: string; kind: OfferKind; provider: string; title: string; price: Money; refundable: boolean; expires_at?: string | null; deep_link?: string | null };
+type BaseOffer = { offer_id: string; kind: OfferKind; provider: string; title: string; price: Money; refundable: boolean; expires_at?: string | null; bookable: boolean; deep_link?: string | null };
 export type FlightSegment = { carrier: string; carrier_code: string; flight_number: string; origin: string; destination: string; departure_at: string; arrival_at: string };
 export type FlightSlice = { origin: string; destination: string; departure_at: string; arrival_at: string; duration_minutes: number; stops: number; segments: FlightSegment[] };
 export type FlightOffer = BaseOffer & { kind: "flight"; slices: FlightSlice[]; cabin_class: string; passengers: number; baggage?: string | null };

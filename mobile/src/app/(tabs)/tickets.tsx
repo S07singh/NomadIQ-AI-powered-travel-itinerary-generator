@@ -5,6 +5,7 @@ import { ApiError, api } from "@/api/client";
 import type { AnyOffer } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { OfferCard } from "@/components/offers";
+import { OfferAction } from "@/components/trip-extras";
 import { Button, Chip, Field, Loading, Notice, Screen, T } from "@/components/ui";
 import { holdFare } from "@/lib/hold";
 import { isoDaysFromNow } from "@/lib/format";
@@ -99,7 +100,7 @@ export default function TicketsTab() {
           <OfferCard
             key={offer.offer_id}
             offer={offer}
-            action={<Button title="Select" variant="quiet" busy={holding === offer.offer_id} onPress={() => hold(offer)} style={{ height: 44 }} />}
+            action={offer.bookable ? <Button title="Select" variant="quiet" busy={holding === offer.offer_id} onPress={() => hold(offer)} style={{ height: 44 }} /> : <OfferAction offer={offer} user={user} />}
           />
         ))}
         {results?.length ? (

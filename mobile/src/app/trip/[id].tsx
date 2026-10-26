@@ -4,22 +4,27 @@ import { Alert, Linking, Pressable, Share, View } from "react-native";
 import { ApiError, api } from "@/api/client";
 import type { Trip, TripProgress } from "@/api/types";
 import { DepartureBoard, RouteItinerary } from "@/components/route";
+import { FlightsSection, SightsSection, SourcesList, TextLink, hostname } from "@/components/trip-extras";
+import { useAuth } from "@/auth/AuthContext";
 import { Button, Chip, Field, Loading, Notice, Photo, Rule, Screen, T } from "@/components/ui";
 import { dateRange, money } from "@/lib/format";
 import { colors, fonts } from "@/theme";
 
-type Section = "route" | "stays" | "food" | "budget";
+type Section = "route" | "sights" | "flights" | "stays" | "food" | "budget";
 const SECTIONS: { id: Section; label: string }[] = [
   { id: "route", label: "Route" },
+  { id: "sights", label: "Sights" },
+  { id: "flights", label: "Flights" },
   { id: "stays", label: "Stays" },
   { id: "food", label: "Food" },
   { id: "budget", label: "Budget" },
 ];
 const BUSY = new Set(["queued", "generating"]);
-const LINE_LABELS = { accommodation: "Stays", food: "Food", activities: "Things to do", local_transport: "Getting around", misc: "Buffer" } as const;
+const LINE_LABELS = { flights: "Flights", accommodation: "Stays", food: "Food", activities: "Things to do", local_transport: "Getting around", misc: "Buffer" } as const;
 
 export default function TripScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [progress, setProgress] = useState<TripProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -120,10 +125,12 @@ export default function TripScreen() {
           {plan.summary ? <T style={{ marginTop: 14, fontSize: 17, lineHeight: 25 }}>{plan.summary}</T> : null}
 
           <View style={{ flexDirection: "row", gap: 8, marginTop: 20, flexWrap: "wrap" }}>
-            {SECTIONS.map((s) => <Chip key={s.id} label={s.label} on={section === s.id} onPress={() => setSection(s.id)} />)}
+            {SECTIONS.filter((s) => s.id !== "flights" || plan.flights).map((s) => <Chip key={s.id} label={s.label} on={section === s.id} onPress={() => setSection(s.id)} />)}
           </View>
           <View style={{ marginTop: 22 }}>
             {section === "route" ? <RouteItinerary days={plan.days} currency={currency} /> : null}
+            {section === "sights" ? <SightsSection trip={trip} /> : null}
+            {section === "flights" ? <FlightsSection trip={trip} user={user} /> : null}
 
             {section === "stays"
               ? plan.hotels.map((h) => (
@@ -138,6 +145,11 @@ export default function TripScreen() {
                       <Pressable accessibilityRole="link" onPress={() => router.push("/tickets")}><T variant="label" style={{ color: colors.platform }}>Check live prices</T></Pressable>
                       {h.maps_url ? <Pressable accessibilityRole="link" onPress={() => Linking.openURL(h.maps_url!)}><T variant="label" style={{ color: colors.platform }}>Map</T></Pressable> : null}
                     </View>
+                    {h.links.length ? (
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 18, marginTop: 6 }}>
+                        {h.links.map((l) => <TextLink key={l.url} label={l.label} url={l.url} />)}
+                      </View>
+                    ) : null}
                   </View>
                 ))
               : null}
@@ -150,6 +162,10 @@ export default function TripScreen() {
                     <T variant="heading">{r.name}</T>
                     <T variant="small">{[r.cuisine, r.area, r.avg_cost_per_person ? `about ${money(r.avg_cost_per_person, currency)} a person` : null].filter(Boolean).join(", ")}</T>
                     {r.must_try.length ? <T style={{ marginTop: 2 }}>Order: {r.must_try.join(", ")}</T> : null}
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16, marginTop: 4 }}>
+                      {r.maps_url ? <TextLink label="Map" url={r.maps_url} /> : null}
+                      {r.source_url ? <TextLink label={`Read more on ${hostname(r.source_url)}`} url={r.source_url} /> : null}
+                    </View>
                   </View>
                 ))}
               </View>
@@ -184,6 +200,8 @@ export default function TripScreen() {
           <Field label="Request" value={message} onChangeText={setMessage} placeholder="Add a sunset spot on day 3" onSubmitEditing={ask} returnKeyType="send" />
           <Button title="Update the route" busy={chatting} disabled={!message.trim()} onPress={ask} style={{ marginTop: 10 }} />
           {reply ? <T style={{ marginTop: 12, borderLeftWidth: 4, borderLeftColor: colors.ink, paddingLeft: 10, fontFamily: fonts.semibold }}>{reply}</T> : null}
+
+          <SourcesList trip={trip} />
 
           {plan.videos.length ? (
             <View style={{ marginTop: 24, gap: 8 }}>

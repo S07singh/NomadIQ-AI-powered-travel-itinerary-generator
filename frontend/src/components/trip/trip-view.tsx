@@ -6,12 +6,14 @@ import { useState } from "react";
 import { dateRange } from "@/lib/format";
 import type { Trip } from "@/lib/types";
 import { Photo } from "../photo";
+import { FlightsSection } from "./flights-section";
 import { RouteItinerary } from "./route-itinerary";
 import { Budget, Food, GoodToKnow, Sights, Stays } from "./trip-sections";
 
 const TABS = [
   { id: "route", label: "Route" },
   { id: "sights", label: "Sights" },
+  { id: "flights", label: "Flights" },
   { id: "stays", label: "Stays" },
   { id: "food", label: "Food" },
   { id: "budget", label: "Budget" },
@@ -46,8 +48,9 @@ export function TripView({ trip, aside }: { trip: Trip; aside?: React.ReactNode 
     <>
       {gallery.length ? (
         <div className="grid grid-cols-4 grid-rows-2 gap-1.5 h-[260px] sm:h-[380px] rounded-md overflow-hidden">
-          <Photo image={gallery[0]} className="col-span-4 sm:col-span-2 row-span-2" credit />
-          {gallery.slice(1, 5).map((img) => (
+          {/* Mosaic only when there are enough relevant photos; otherwise one full-width cover. */}
+          <Photo image={gallery[0]} className={gallery.length >= 3 ? "col-span-4 sm:col-span-2 row-span-2" : "col-span-4 row-span-2"} credit />
+          {(gallery.length >= 3 ? gallery.slice(1, 5) : []).map((img) => (
             <Photo key={img.url} image={img} thumb className="hidden sm:block" />
           ))}
         </div>
@@ -58,7 +61,7 @@ export function TripView({ trip, aside }: { trip: Trip; aside?: React.ReactNode 
       <div className="mt-10 grid lg:grid-cols-[1fr_340px] gap-12">
         <div className="min-w-0">
           <div role="tablist" aria-label="Trip sections" className="flex gap-6 overflow-x-auto border-b border-rule mb-10 -mx-1 px-1">
-            {TABS.map((t) => (
+            {TABS.filter((t) => t.id !== "flights" || plan.flights).map((t) => (
               <button
                 key={t.id}
                 role="tab"
@@ -75,6 +78,7 @@ export function TripView({ trip, aside }: { trip: Trip; aside?: React.ReactNode 
           <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
             {tab === "route" && <RouteItinerary days={plan.days} currency={currency} />}
             {tab === "sights" && <Sights plan={plan} />}
+            {tab === "flights" && <FlightsSection trip={trip} />}
             {tab === "stays" && <Stays plan={plan} currency={currency} />}
             {tab === "food" && <Food plan={plan} currency={currency} />}
             {tab === "budget" && <Budget plan={plan} />}

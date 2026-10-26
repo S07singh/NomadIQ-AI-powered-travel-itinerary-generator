@@ -42,6 +42,12 @@ function Times({ dep, arr, from, to, mins, stops }: { dep: string; arr: string; 
   );
 }
 
+/** "6E 203, 6E 517". Sources without flight numbers (Google Flights) only give the airline code, so show nothing. */
+function flightNumbers(segments: FlightOffer["slices"][number]["segments"]): string {
+  // A real flight number is the 2-character airline code followed by digits ("6E203"); "6E" alone is not.
+  return segments.map((g) => g.flight_number).filter((n) => /^[A-Z0-9]{2}\s?\d{1,4}$/.test(n)).join(", ");
+}
+
 export function FlightRow({ offer, action }: { offer: FlightOffer; action?: ReactNode }) {
   const carriers = Array.from(new Set(offer.slices.flatMap((s) => s.segments.map((g) => g.carrier))));
   return (
@@ -50,8 +56,9 @@ export function FlightRow({ offer, action }: { offer: FlightOffer; action?: Reac
         {offer.slices.map((s, i) => (
           <div key={i} className="grid sm:grid-cols-[150px_1fr] gap-3 items-center">
             <p className="text-sm text-slate">
-              <span className="font-bold text-ink">{i === 0 ? "Out" : "Back"}</span> {shortDate(s.departure_at)}
-              <span className="block">{s.segments.map((g) => g.flight_number).join(", ")}</span>
+              {offer.slices.length > 1 ? <span className="font-bold text-ink">{i === 0 ? "Out " : "Back "}</span> : null}
+              {shortDate(s.departure_at)}
+              <span className="block">{flightNumbers(s.segments)}</span>
             </p>
             <Times dep={s.departure_at} arr={s.arrival_at} from={s.origin} to={s.destination} mins={s.duration_minutes} stops={s.stops} />
           </div>

@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { Mic, Square } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { ExternalBook } from "@/components/external-book";
 import { OfferRow } from "@/components/offers";
 import { Button, Loading, Notice, Page } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
@@ -23,7 +24,7 @@ function Actions({ actions, onBook, busy }: { actions: AssistantAction[]; onBook
             <ul key={i} className="mt-3 divide-y divide-rule border-y border-rule bg-sheet">
               {a.data.results.map((o) => (
                 <li key={o.offer_id} className="p-4">
-                  <OfferRow offer={o} action={<Button variant="quiet" disabled={busy} onClick={() => onBook(o.offer_id)}>Book this</Button>} />
+                  <OfferRow offer={o} action={o.bookable ? <Button variant="quiet" disabled={busy} onClick={() => onBook(o.offer_id)}>Book this</Button> : <ExternalBook offer={o} />} />
                 </li>
               ))}
             </ul>

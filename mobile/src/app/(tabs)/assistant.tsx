@@ -9,6 +9,7 @@ import { ApiError, api } from "@/api/client";
 import type { AssistantAction, AssistantMessage } from "@/api/types";
 import { TalkIcon } from "@/components/icons";
 import { OfferCard } from "@/components/offers";
+import { OfferAction } from "@/components/trip-extras";
 import { Button, T } from "@/components/ui";
 import { money } from "@/lib/format";
 import { colors, fonts, radius } from "@/theme";
@@ -27,7 +28,17 @@ function Actions({ actions, onBook, busy }: { actions: AssistantAction[]; onBook
           return (
             <View key={i} style={{ marginTop: 6 }}>
               {a.data.results.map((o) => (
-                <OfferCard key={o.offer_id} offer={o} action={<Button title="Book this" variant="quiet" disabled={busy} onPress={() => onBook(o.offer_id)} style={{ height: 42 }} />} />
+                <OfferCard
+                  key={o.offer_id}
+                  offer={o}
+                  action={
+                    o.bookable ? (
+                      <Button title="Book this" variant="quiet" disabled={busy} onPress={() => onBook(o.offer_id)} style={{ height: 42 }} />
+                    ) : (
+                      <OfferAction offer={o} user={null} />
+                    )
+                  }
+                />
               ))}
             </View>
           );
