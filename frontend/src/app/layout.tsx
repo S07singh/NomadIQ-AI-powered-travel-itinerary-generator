@@ -16,13 +16,15 @@ export const viewport: Viewport = { themeColor: "#14213D" };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={overpass.variable}>
-      <body className="antialiased">
+      {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla) inject attributes like
+          cz-shortcut-listen onto <body> before React hydrates, which is a false-positive mismatch. */}
+      <body className="antialiased min-h-dvh flex flex-col" suppressHydrationWarning>
         <AuthProvider>
           <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 bg-signal px-3 py-2 font-bold">
             Skip to content
           </a>
           <SiteHeader />
-          <main id="main">{children}</main>
+          <main id="main" className="flex-1">{children}</main>
           <SiteFooter />
         </AuthProvider>
       </body>
