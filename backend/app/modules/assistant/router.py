@@ -1,12 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
 
 from app.common.schemas import Page
 from app.core.deps import DB, CurrentUser, JobsDep, PageParams, ProvidersDep, SettingsDep
 from app.core.exceptions import AppError
 from app.core.ratelimit import rate_limit
-from app.modules.assistant.schemas import AssistantMessage, AssistantMessageRequest, AssistantReply, ConversationSummary
+from app.modules.assistant.schemas import AssistantMessage, AssistantMessageRequest, AssistantReply, ConversationSummary, SpeakRequest
 from app.modules.assistant.service import AssistantService
 from app.providers.speech import Transcript
 
@@ -84,4 +84,10 @@ async def voice_assistant(
     if not transcript.text.strip():
         raise AppError("Sorry, I couldn't hear anything. Please try again.", code="no_speech", status_code=422)
     req = AssistantMessageRequest(message=transcript.text[:2000], conversation_id=conversation_id or None, trip_id=trip_id or None, selected_offer_id=selected_offer_id or None)
-    return await service.handle(user, req, transcript=transcript.text)
+    return await service.handle(user, req, transcript=transcript.text, language=transcript.language)
+
+
+@voice_router.post("/speak", summary="Text → speech (read an assistant reply aloud)")
+async def speak(req: SpeakRequest, user: CurrentUser, providers: ProvidersDep) -> Response:
+    audio, content_type = await providers.speech.synthesize(req.text, req.language)
+    return Response(content=audio, media_type=content_type)

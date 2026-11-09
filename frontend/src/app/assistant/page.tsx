@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { Mic, Sparkles, Square } from "lucide-react";
+import { Mic, Sparkles, Square, Volume2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ExternalBook } from "@/components/external-book";
@@ -71,15 +71,16 @@ export default function AssistantPage() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const recorder = useRecorder();
   const endRef = useRef<HTMLDivElement>(null);
+  // useRecorder takes its auto-stop callback at the first call, so sendVoice is wired through a ref
+  // that always points at the latest closure (conversationId changes across renders).
+  const sendVoiceRef = useRef<(audio: Blob | null) => void>(() => {});
+  const recorder = useRecorder((audio) => sendVoiceRef.current(audio));
 
   useEffect(() => {
     // Block body on purpose: newer browsers return a Promise from scrollIntoView, which React would treat as a cleanup.
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages]);
-
-  if (!user) return <Page><Loading /></Page>;
 
   const push = (m: AssistantMessage) => setMessages((cur) => [...cur, m]);
   const local = (content: string): AssistantMessage => ({ id: `local-${Date.now()}`, role: "user", content, actions: [], created_at: new Date().toISOString() });
@@ -101,9 +102,7 @@ export default function AssistantPage() {
     }
   };
 
-  const toggleMic = async () => {
-    if (!recorder.recording) return recorder.start();
-    const audio = await recorder.stop();
+  const sendVoice = async (audio: Blob | null) => {
     if (!audio) return;
     setBusy(true);
     setError(null);
@@ -112,13 +111,21 @@ export default function AssistantPage() {
       setConversationId(reply.conversation_id);
       push(local(reply.transcript ?? "(voice)"));
       push(reply.message);
-      speak(reply.message.content);
+      speak(reply.message.content, reply.language);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't make out that recording. Try again or type.");
     } finally {
       setBusy(false);
     }
   };
+
+  useEffect(() => {
+    sendVoiceRef.current = sendVoice;
+  });
+
+  if (!user) return <Page><Loading /></Page>;
+
+  const toggleMic = () => (recorder.recording ? recorder.stop().then(sendVoice) : recorder.start());
 
   return (
     <Page className="pb-10">
@@ -154,7 +161,17 @@ export default function AssistantPage() {
                     <Sparkles size={15} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[1.05rem] max-w-[65ch]">{m.content}</p>
+                    <p className="text-[1.05rem] max-w-[65ch]">
+                      {m.content}{" "}
+                      <button
+                        type="button"
+                        onClick={() => speak(m.content)}
+                        aria-label="Read this reply aloud"
+                        className="inline-flex align-middle text-slate hover:text-ink"
+                      >
+                        <Volume2 size={15} />
+                      </button>
+                    </p>
                     <Actions actions={m.actions} busy={busy} onBook={(id) => send("Book this one", id)} />
                   </div>
                 </>

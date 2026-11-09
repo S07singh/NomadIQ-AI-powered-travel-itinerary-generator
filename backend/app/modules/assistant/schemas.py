@@ -86,6 +86,12 @@ class AssistantReply(APIModel):
     conversation_id: str
     message: AssistantMessage
     transcript: str | None = Field(default=None, description="Present when the input was voice")
+    language: str | None = Field(default=None, description="Detected language of the spoken input, if any (e.g. 'hi-IN')")
+
+
+class SpeakRequest(APIModel):
+    text: str = Field(min_length=1, max_length=2500)
+    language: str | None = Field(default=None, description="BCP-47 code, e.g. 'hi-IN'; defaults to English")
 
 
 class ConversationSummary(APIModel):

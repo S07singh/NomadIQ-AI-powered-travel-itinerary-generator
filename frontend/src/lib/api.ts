@@ -176,4 +176,19 @@ export const api = {
     for (const [k, v] of Object.entries(fields)) if (v) form.append(k, v);
     return request<AssistantReply>("/voice/assistant", { form });
   },
+  /** Text → speech via the configured provider (Sarvam). Returns null if none is configured or the call fails; callers fall back to on-device speech. */
+  speak: async (text: string, language?: string | null): Promise<Blob | null> => {
+    const access = tokens.get()?.access_token;
+    if (!access) return null;
+    try {
+      const res = await fetch(`${API_URL}/voice/speak`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${access}` },
+        body: JSON.stringify({ text, language: language || undefined }),
+      });
+      return res.ok ? await res.blob() : null;
+    } catch {
+      return null;
+    }
+  },
 };

@@ -106,7 +106,7 @@ class AssistantService:
         await self.conversations.delete_one({"_id": conv["_id"]})
 
     # ─── Main entry ───────────────────────────────────────
-    async def handle(self, user: dict, req: AssistantMessageRequest, transcript: str | None = None) -> AssistantReply:
+    async def handle(self, user: dict, req: AssistantMessageRequest, transcript: str | None = None, language: str | None = None) -> AssistantReply:
         conv = await self._conversation(user, req.conversation_id, req.message)
         history = await self.messages.find({"conversation_id": conv["_id"]}).sort("created_at", -1).limit(HISTORY_TURNS).to_list(HISTORY_TURNS)
         await self._save(conv["_id"], "user", req.message)
@@ -124,7 +124,7 @@ class AssistantService:
         decision = await self.p.llm.generate_json(prompt, AssistantDecision, system=SYSTEM, temperature=0.2)
         reply, actions = await self._execute(user, req, decision)
         message = await self._save(conv["_id"], "assistant", reply, decision.intent, actions)
-        return AssistantReply(conversation_id=str(conv["_id"]), message=message, transcript=transcript)
+        return AssistantReply(conversation_id=str(conv["_id"]), message=message, transcript=transcript, language=language)
 
     async def _execute(self, user: dict, req: AssistantMessageRequest, d: AssistantDecision) -> tuple[str, list[AssistantAction]]:
         params = {k: v for k, v in (d.params or {}).items() if v not in (None, "", [])}

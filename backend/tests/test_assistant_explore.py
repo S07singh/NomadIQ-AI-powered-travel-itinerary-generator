@@ -118,6 +118,11 @@ async def test_voice_rejects_bad_uploads(app, client, auth):
     assert big.status_code == 413
 
 
+async def test_speak_unsupported_on_mock_provider(client, auth):
+    resp = await client.post("/voice/speak", json={"text": "Hello"}, headers=auth["headers"])
+    assert resp.status_code == 502 and resp.json()["error"]["code"] == "tts_unsupported"
+
+
 async def test_explore_endpoints(client):
     places = (await client.get("/explore/places?q=goa")).json()
     assert places[0]["country_code"] == "IN"

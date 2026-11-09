@@ -25,7 +25,7 @@ from app.providers.media import (
 from app.providers.mock_inventory import MockActivityProvider, MockFlightProvider, MockGroundProvider, MockHotelProvider
 from app.providers.payments import MockPaymentProvider, PaymentProvider
 from app.providers.search import ExaSearch, MockWebSearch, NoWebSearch, TavilySearch, WebSearchProvider
-from app.providers.speech import DeepgramSpeechProvider, MockSpeechProvider, OpenAISpeechProvider, SpeechProvider
+from app.providers.speech import DeepgramSpeechProvider, MockSpeechProvider, OpenAISpeechProvider, SarvamSpeechProvider, SpeechProvider
 from app.providers.weather import MockWeatherProvider, OpenMeteoProvider, WeatherProvider
 
 
@@ -64,7 +64,7 @@ def build_providers(settings: Settings, http: httpx.AsyncClient) -> Providers:
     if settings.llm_provider == "openrouter":
         llm = OpenRouterLLM(http, settings.openrouter_api_key, settings.openrouter_model, settings.llm_timeout_seconds)
     elif settings.llm_provider == "gemini":
-        llm = GeminiLLM(settings.google_api_key, settings.gemini_model)
+        llm = GeminiLLM(settings.gemini_api_key or settings.google_api_key, settings.gemini_model)
     elif settings.llm_provider == "ollama":
         llm = OllamaLLM(http, settings.ollama_base_url, settings.ollama_model, settings.llm_timeout_seconds)
     else:
@@ -107,6 +107,7 @@ def build_providers(settings: Settings, http: httpx.AsyncClient) -> Providers:
     speech: SpeechProvider = {
         "deepgram": lambda: DeepgramSpeechProvider(http, settings.deepgram_api_key),
         "openai": lambda: OpenAISpeechProvider(http, settings.openai_api_key),
+        "sarvam": lambda: SarvamSpeechProvider(http, settings.sarvam_api_key),
         "mock": MockSpeechProvider,
     }[settings.speech_provider]()
 

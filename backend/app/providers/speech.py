@@ -1,8 +1,9 @@
 """
-Speech-to-text. Text-to-speech is done on-device (expo-speech / Web Speech API)
-for zero added latency, so the backend only transcribes.
+Speech-to-text, and text-to-speech where a provider supports it (Sarvam). Clients fall back
+to on-device speech (expo-speech / Web Speech API) when no TTS-capable provider is configured.
 """
 
+import base64
 from abc import ABC, abstractmethod
 
 import httpx
@@ -25,6 +26,10 @@ class SpeechProvider(ABC):
 
     @abstractmethod
     async def transcribe(self, audio: bytes, content_type: str, language: str | None = None) -> Transcript: ...
+
+    async def synthesize(self, text: str, language: str | None = None) -> tuple[bytes, str]:
+        """Text → (audio bytes, content type). Providers without TTS raise; callers fall back to on-device speech."""
+        raise ProviderError(f"The '{self.name}' speech provider doesn't support text-to-speech", code="tts_unsupported")
 
 
 class MockSpeechProvider(SpeechProvider):
@@ -100,3 +105,62 @@ class OpenAISpeechProvider(SpeechProvider):
         except httpx.HTTPError as exc:
             raise ProviderError(f"Transcription failed: {exc}", code="stt_failed")
         return Transcript(text=resp.json().get("text", ""), language=language)
+
+
+# Bulbul (TTS) only speaks these; Saaras (STT) understands far more but we only need the
+# detected language back to pick a TTS voice, so map whatever it returns onto this set.
+SARVAM_TTS_LANGUAGES = {"bn-IN", "en-IN", "gu-IN", "hi-IN", "kn-IN", "ml-IN", "mr-IN", "od-IN", "pa-IN", "ta-IN", "te-IN"}
+
+
+def _sarvam_tts_language(language: str | None) -> str:
+    if language in SARVAM_TTS_LANGUAGES:
+        return language
+    base = (language or "en").split("-")[0].lower()
+    for code in SARVAM_TTS_LANGUAGES:
+        if code.lower().startswith(base):
+            return code
+    return "en-IN"
+
+
+class SarvamSpeechProvider(SpeechProvider):
+    """Sarvam AI: Saaras for speech-to-text, Bulbul for text-to-speech. Best-in-class for Indian languages + English."""
+
+    name = "sarvam"
+
+    def __init__(self, http: httpx.AsyncClient, api_key: str):
+        self.http, self.key = http, api_key
+
+    async def transcribe(self, audio: bytes, content_type: str, language: str | None = None) -> Transcript:
+        try:
+            resp = await self.http.post(
+                "https://api.sarvam.ai/speech-to-text",
+                headers={"api-subscription-key": self.key},
+                data={"language_code": language or "unknown"},
+                files={"file": ("audio.webm", audio, content_type or "audio/webm")},
+                timeout=30,
+            )
+            resp.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise ProviderError(f"Transcription failed: {exc}", code="stt_failed")
+        data = resp.json()
+        return Transcript(
+            text=data.get("transcript", ""),
+            language=data.get("language_code") or language,
+            confidence=data.get("language_probability"),
+        )
+
+    async def synthesize(self, text: str, language: str | None = None) -> tuple[bytes, str]:
+        try:
+            resp = await self.http.post(
+                "https://api.sarvam.ai/text-to-speech",
+                headers={"api-subscription-key": self.key, "Content-Type": "application/json"},
+                json={"text": text[:2500], "language_code": _sarvam_tts_language(language)},
+                timeout=30,
+            )
+            resp.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise ProviderError(f"Speech synthesis failed: {exc}", code="tts_failed")
+        audios = resp.json().get("audios") or []
+        if not audios:
+            raise ProviderError("Speech synthesis returned no audio", code="tts_failed")
+        return base64.b64decode(audios[0]), "audio/wav"

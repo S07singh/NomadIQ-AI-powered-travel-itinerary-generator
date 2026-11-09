@@ -1,5 +1,6 @@
 """Real provider integrations, exercised against mocked HTTP (httpx.MockTransport)."""
 
+import base64
 import json
 from datetime import date, timedelta
 
@@ -13,7 +14,7 @@ from app.providers.duffel import DuffelFlightProvider, parse_iso_duration
 from app.providers.liteapi import LiteApiHotelProvider
 from app.providers.llm import OllamaLLM
 from app.providers.media import WikipediaImageProvider, YouTubeDataProvider, maps_url
-from app.providers.speech import DeepgramSpeechProvider, MockSpeechProvider
+from app.providers.speech import DeepgramSpeechProvider, MockSpeechProvider, SarvamSpeechProvider
 from app.providers.weather import OpenMeteoProvider, clamp_forecast_window, wmo_to_condition
 from app.modules.planner.schemas import HotelsDraft
 
@@ -183,6 +184,35 @@ async def test_deepgram_and_mock_speech():
         t = await DeepgramSpeechProvider(http, "dg").transcribe(b"\x00\x01", "audio/webm")
         assert t.text == "goa ki flight" and t.language == "hi" and t.duration_seconds == 3.2
     assert (await MockSpeechProvider().transcribe(b"\xff\xfe\x00", "audio/wav")).text == "Plan a 3 day trip to Goa"
+
+
+async def test_sarvam_speech_to_text_and_text_to_speech():
+    def stt_handler(request):
+        assert request.headers["api-subscription-key"] == "sv"
+        return httpx.Response(200, json={"transcript": "goa jaane ka plan banao", "language_code": "hi-IN", "language_probability": 0.97})
+
+    async with client_for(stt_handler) as http:
+        t = await SarvamSpeechProvider(http, "sv").transcribe(b"\x00\x01", "audio/webm")
+        assert t.text == "goa jaane ka plan banao" and t.language == "hi-IN" and t.confidence == 0.97
+
+    def tts_handler(request):
+        assert request.headers["api-subscription-key"] == "sv"
+        body = json.loads(request.content)
+        assert body["language_code"] == "hi-IN" and body["text"] == "Namaste"
+        return httpx.Response(200, json={"audios": [base64.b64encode(b"RIFF....WAVEfmt ").decode()]})
+
+    async with client_for(tts_handler) as http:
+        audio, content_type = await SarvamSpeechProvider(http, "sv").synthesize("Namaste", "hi-IN")
+        assert audio.startswith(b"RIFF") and content_type == "audio/wav"
+
+    # An unrecognized language code falls back to English rather than erroring.
+    async with client_for(lambda r: httpx.Response(200, json={"audios": [base64.b64encode(b"x").decode()]})) as http:
+        provider = SarvamSpeechProvider(http, "sv")
+        assert (await provider.synthesize("hi", "fr-FR"))[0] == b"x"
+
+    async with client_for(lambda r: httpx.Response(500)) as http:
+        with pytest.raises(ProviderError):
+            await SarvamSpeechProvider(http, "sv").synthesize("hi")
 
 
 async def test_ollama_structured_output_request():

@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1"
     google_api_key: str = ""
+    gemini_api_key: str = ""  # preferred over google_api_key when both are set (e.g. a paid-tier key)
     gemini_model: str = "gemini-2.5-flash"
     openrouter_api_key: str = ""
     openrouter_model: str = "google/gemini-2.5-flash"
@@ -77,9 +78,10 @@ class Settings(BaseSettings):
     plan_flights: bool = Field(default=True, description="Include live flight options in generated plans")
 
     # ─── Voice ────────────────────────────────────────────
-    speech_provider: Literal["mock", "deepgram", "openai"] = "mock"
+    speech_provider: Literal["mock", "deepgram", "openai", "sarvam"] = "mock"
     deepgram_api_key: str = ""
     openai_api_key: str = ""
+    sarvam_api_key: str = ""
     max_audio_bytes: int = 10 * 1024 * 1024
 
     # ─── Performance ──────────────────────────────────────

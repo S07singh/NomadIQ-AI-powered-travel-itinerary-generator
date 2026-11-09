@@ -298,6 +298,6 @@ export type AssistantAction =
   | { type: "booking_quote"; data: { booking_id: string; requires_confirmation: true; price: Money; confirm_before?: string | null } }
   | { type: "needs_info"; data: { missing: string[]; intent?: string } };
 export type AssistantMessage = { id: string; role: "user" | "assistant"; content: string; intent?: string | null; actions: AssistantAction[]; created_at: string };
-export type AssistantReply = { conversation_id: string; message: AssistantMessage; transcript?: string | null };
+export type AssistantReply = { conversation_id: string; message: AssistantMessage; transcript?: string | null; language?: string | null };
 
 export type ApiErrorBody = { error: { code: string; message: string; details?: unknown } };
