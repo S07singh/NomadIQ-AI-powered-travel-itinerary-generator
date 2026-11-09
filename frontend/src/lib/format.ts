@@ -39,9 +39,10 @@ export function duration(minutes?: number | null): string {
   return h ? `${h}h ${m ? `${m}m` : ""}`.trim() : `${m}m`;
 }
 
-export function dateRange(start?: string | null, end?: string | null, days?: number): string {
+// Every caller appends ", N days" itself, so this only ever describes the dates.
+export function dateRange(start?: string | null, end?: string | null): string {
   if (start && end) return start === end ? shortDate(start) : `${shortDate(start)} to ${shortDate(end)}`;
-  return days ? `${days} days, dates open` : "Dates open";
+  return "Dates open";
 }
 
 export const WEATHER_WORDS: Record<WeatherCondition, string> = {

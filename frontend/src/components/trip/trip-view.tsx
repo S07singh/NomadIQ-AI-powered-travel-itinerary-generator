@@ -5,7 +5,6 @@ import { Play } from "lucide-react";
 import { useState } from "react";
 import { dateRange } from "@/lib/format";
 import type { Trip } from "@/lib/types";
-import { Photo } from "../photo";
 import { FlightsSection } from "./flights-section";
 import { RouteItinerary } from "./route-itinerary";
 import { Budget, Food, GoodToKnow, Sights, Stays } from "./trip-sections";
@@ -21,18 +20,16 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
 
-export function TripHeading({ trip, actions }: { trip: Trip; actions?: React.ReactNode }) {
+/** Plain-text heading used while a trip has no plan yet (generating, failed, draft) — no photo to bank on. */
+export function TripHeading({ trip }: { trip: Trip }) {
   const people = trip.travelers.adults + trip.travelers.children;
   return (
-    <div className="pt-10 pb-6 flex flex-wrap items-end justify-between gap-6">
-      <div>
-        <h1 className="display text-4xl sm:text-6xl max-w-[18ch]">{trip.destination.split(",")[0]}</h1>
-        <p className="mt-3 text-lg text-slate">
-          {dateRange(trip.start_date, trip.end_date, trip.duration_days)}, {trip.duration_days} days, {people} {people === 1 ? "traveler" : "travelers"}
-          {trip.origin ? `, from ${trip.origin}` : ""}
-        </p>
-      </div>
-      {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}
+    <div className="pt-10 pb-6">
+      <h1 className="editorial text-4xl sm:text-6xl text-ink max-w-[18ch]">{trip.destination.split(",")[0]}</h1>
+      <p className="mt-3 text-lg text-slate">
+        {dateRange(trip.start_date, trip.end_date)}, {trip.duration_days} days, {people} {people === 1 ? "traveler" : "travelers"}
+        {trip.origin ? `, from ${trip.origin}` : ""}
+      </p>
     </div>
   );
 }
@@ -42,20 +39,9 @@ export function TripView({ trip, aside }: { trip: Trip; aside?: React.ReactNode 
   const plan = trip.plan;
   if (!plan) return null;
   const currency = trip.budget?.currency ?? "USD";
-  const gallery = plan.gallery.length ? plan.gallery : plan.cover_image ? [plan.cover_image] : [];
 
   return (
     <>
-      {gallery.length ? (
-        <div className="grid grid-cols-4 grid-rows-2 gap-1.5 h-[260px] sm:h-[380px] rounded-md overflow-hidden">
-          {/* Mosaic only when there are enough relevant photos; otherwise one full-width cover. */}
-          <Photo image={gallery[0]} className={gallery.length >= 3 ? "col-span-4 sm:col-span-2 row-span-2" : "col-span-4 row-span-2"} credit />
-          {(gallery.length >= 3 ? gallery.slice(1, 5) : []).map((img) => (
-            <Photo key={img.url} image={img} thumb className="hidden sm:block" />
-          ))}
-        </div>
-      ) : null}
-
       {plan.summary ? <p className="mt-8 text-xl max-w-[62ch] leading-relaxed">{plan.summary}</p> : null}
 
       <div className="mt-10 grid lg:grid-cols-[1fr_340px] gap-12">

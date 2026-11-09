@@ -217,8 +217,8 @@ export function Sights({ plan }: { plan: TripPlan }) {
   return (
     <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
       {plan.attractions.map((a) => (
-        <li key={a.name}>
-          <Photo image={a.images[0]} alt={a.name} className="aspect-[4/3] rounded-sm" credit />
+        <li key={a.name} className="group">
+          <Photo image={a.images[0]} alt={a.name} className="aspect-[4/3] rounded-sm overflow-hidden [&>img]:transition-transform [&>img]:duration-700 [&>img]:ease-out group-hover:[&>img]:scale-105" credit />
           <h3 className="heading text-lg mt-3">{a.name}</h3>
           <p className="text-slate text-[0.95rem]">{a.description}</p>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold">

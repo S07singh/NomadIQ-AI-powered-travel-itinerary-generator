@@ -2,7 +2,8 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { TripHeading, TripView } from "@/components/trip/trip-view";
+import { TripBanner } from "@/components/trip/trip-banner";
+import { TripView } from "@/components/trip/trip-view";
 import { ButtonLink, Loading, Notice, Page } from "@/components/ui";
 import { api } from "@/lib/api";
 import type { Trip } from "@/lib/types";
@@ -21,7 +22,7 @@ export default function SharedTripPage() {
 
   return (
     <Page>
-      <TripHeading trip={trip} actions={<ButtonLink href={`/trips/new?to=${encodeURIComponent(trip.destination)}&days=${trip.duration_days}`}>Plan a trip like this</ButtonLink>} />
+      <TripBanner trip={trip} actions={<ButtonLink href={`/trips/new?to=${encodeURIComponent(trip.destination)}&days=${trip.duration_days}`}>Plan a trip like this</ButtonLink>} />
       <TripView trip={trip} />
     </Page>
   );

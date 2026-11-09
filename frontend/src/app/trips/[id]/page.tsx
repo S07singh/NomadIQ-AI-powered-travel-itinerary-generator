@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DepartureBoard } from "@/components/trip/departure-board";
+import { TripBanner } from "@/components/trip/trip-banner";
 import { TripChat } from "@/components/trip/trip-chat";
 import { TripHeading, TripView } from "@/components/trip/trip-view";
 import { Button, Loading, Notice, Page } from "@/components/ui";
@@ -63,20 +64,17 @@ export default function TripPage() {
 
   const ready = trip.status === "ready" && trip.plan;
 
+  const actions = (
+    <>
+      <Button variant="quiet" onClick={share}>Share</Button>
+      <Button variant="quiet" onClick={regenerate}>Plan again</Button>
+      <Button variant="danger" onClick={remove}>Delete</Button>
+    </>
+  );
+
   return (
     <Page>
-      <TripHeading
-        trip={trip}
-        actions={
-          ready ? (
-            <>
-              <Button variant="quiet" onClick={share}>Share</Button>
-              <Button variant="quiet" onClick={regenerate}>Plan again</Button>
-              <Button variant="danger" onClick={remove}>Delete</Button>
-            </>
-          ) : null
-        }
-      />
+      {ready ? <TripBanner trip={trip} actions={actions} /> : <TripHeading trip={trip} />}
       {shareUrl ? (
         <div className="mb-6">
           <Notice tone="success">

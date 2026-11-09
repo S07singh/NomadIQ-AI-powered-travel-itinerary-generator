@@ -43,7 +43,7 @@ export default function TripsPage() {
                 <Photo image={t.cover_image} thumb className="aspect-[4/3] rounded-sm" alt={t.destination} />
                 <div className="min-w-0">
                   <h2 className="heading text-xl sm:text-2xl group-hover:underline underline-offset-4 decoration-signal decoration-[3px]">{t.destination.split(",")[0]}</h2>
-                  <p className="text-slate">{dateRange(t.start_date, t.end_date, t.duration_days)}, {t.duration_days} days, {t.travel_style}</p>
+                  <p className="text-slate">{dateRange(t.start_date, t.end_date)}, {t.duration_days} days, {t.travel_style}</p>
                 </div>
                 {STATUS[t.status] ? (
                   <span className={`col-start-2 sm:col-start-auto font-bold ${t.status === "failed" ? "text-brick" : "text-slate"}`}>{STATUS[t.status]}</span>
