@@ -1,5 +1,6 @@
 "use client";
 
+import { BedDouble, Bus, Compass, Plane, TrainFront } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -8,7 +9,9 @@ import { Button, ButtonLink, Loading, Notice, Page } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
 import { useRequireUser } from "@/lib/auth";
 import { money } from "@/lib/format";
-import type { Booking } from "@/lib/types";
+import type { Booking, OfferKind } from "@/lib/types";
+
+const KIND_ICON: Record<OfferKind, typeof Plane> = { flight: Plane, train: TrainFront, bus: Bus, hotel: BedDouble, activity: Compass };
 
 function useCountdown(until?: string | null) {
   const [now, setNow] = useState(() => Date.now());
@@ -68,22 +71,33 @@ export default function BookingPage() {
     if (window.confirm(booking.status === "confirmed" ? "Cancel this booking? Refund depends on the fare rules." : "Release this price hold?")) act(() => api.cancelBooking(booking.id));
   };
 
+  const Icon = KIND_ICON[booking.kind];
+
   return (
     <Page className="pb-10">
-      <header className="pt-10 pb-8">
-        <p className="font-semibold text-slate">{booking.kind[0].toUpperCase() + booking.kind.slice(1)} booking</p>
-        <h1 className="display text-4xl sm:text-5xl mt-1">{HEADLINES[booking.status]}</h1>
+      <header className="pt-10 pb-8 flex items-center gap-4">
+        <span className="h-12 w-12 rounded-sm bg-ink-soft flex items-center justify-center text-white shrink-0" aria-hidden>
+          <Icon size={22} />
+        </span>
+        <div>
+          <p className="font-semibold text-slate">{booking.kind[0].toUpperCase() + booking.kind.slice(1)} booking</p>
+          <h1 className="display text-4xl sm:text-5xl mt-1">{HEADLINES[booking.status]}</h1>
+        </div>
       </header>
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-12">
         <div>
           {booking.status === "confirmed" ? (
-            <div className="mb-8 bg-board text-white rounded-md px-6 py-5 flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-white/70">Booking reference</p>
-                <p className="heading text-4xl tabular text-signal tracking-wide">{booking.provider_reference}</p>
+            <div className="mb-8 bg-board text-white rounded-md overflow-hidden">
+              <div className="px-6 py-5 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-white/70">Booking reference</p>
+                  <p className="heading text-4xl tabular text-signal tracking-wide">{booking.provider_reference}</p>
+                </div>
+                {booking.tickets.length ? <p className="text-white/70 tabular text-right">Tickets {booking.tickets.join(", ")}</p> : null}
               </div>
-              {booking.tickets.length ? <p className="text-white/70 tabular text-right">Tickets {booking.tickets.join(", ")}</p> : null}
+              <div className="border-t border-dashed border-white/25 mx-6" aria-hidden />
+              <p className="px-6 py-3 text-white/60 text-sm">Keep this reference handy, you may be asked for it at check-in.</p>
             </div>
           ) : null}
           <section className="border-y border-rule py-6">

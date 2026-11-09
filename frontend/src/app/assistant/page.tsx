@@ -1,12 +1,12 @@
 "use client";
 
 import clsx from "clsx";
-import { Mic, Square } from "lucide-react";
+import { Mic, Sparkles, Square } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ExternalBook } from "@/components/external-book";
 import { OfferRow } from "@/components/offers";
-import { Button, Loading, Notice, Page } from "@/components/ui";
+import { Button, Loading, Notice, Page, Station } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
 import { useRequireUser } from "@/lib/auth";
 import { money } from "@/lib/format";
@@ -122,9 +122,14 @@ export default function AssistantPage() {
 
   return (
     <Page className="pb-10">
-      <header className="pt-10 pb-6">
-        <h1 className="display text-4xl sm:text-5xl">Assistant</h1>
-        <p className="mt-3 text-lg text-slate max-w-[60ch]">Ask for a plan, a fare or a room. It can hold a price for you, but you always confirm before anything is paid.</p>
+      <header className="pt-10 pb-6 flex items-center gap-4">
+        <span className="h-12 w-12 rounded-sm bg-ink-soft flex items-center justify-center text-signal shrink-0" aria-hidden>
+          <Sparkles size={22} />
+        </span>
+        <div>
+          <h1 className="display text-4xl sm:text-5xl">Assistant</h1>
+          <p className="mt-2 text-lg text-slate max-w-[60ch]">Ask for a plan, a fare or a room. It can hold a price for you, but you always confirm before anything is paid.</p>
+        </div>
       </header>
 
       <div className="max-w-[860px]">
@@ -140,19 +145,28 @@ export default function AssistantPage() {
 
         <ol className="space-y-6" aria-live="polite">
           {messages.map((m) => (
-            <li key={m.id} className={clsx(m.role === "user" ? "flex justify-end" : "")}>
+            <li key={m.id} className={clsx("flex gap-3", m.role === "user" ? "justify-end" : "items-start")}>
               {m.role === "user" ? (
                 <p className="bg-ink text-white rounded-md px-4 py-2.5 max-w-[80%]">{m.content}</p>
               ) : (
-                <div className="border-l-4 border-ink pl-4">
-                  <p className="text-[1.05rem] max-w-[65ch]">{m.content}</p>
-                  <Actions actions={m.actions} busy={busy} onBook={(id) => send("Book this one", id)} />
-                </div>
+                <>
+                  <span className="h-8 w-8 rounded-full bg-ink text-signal flex items-center justify-center shrink-0 mt-0.5" aria-hidden>
+                    <Sparkles size={15} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[1.05rem] max-w-[65ch]">{m.content}</p>
+                    <Actions actions={m.actions} busy={busy} onBook={(id) => send("Book this one", id)} />
+                  </div>
+                </>
               )}
             </li>
           ))}
           {busy ? (
-            <li className="border-l-4 border-rule pl-4 text-slate" role="status">
+            <li className="flex items-center gap-3 text-slate" role="status">
+              <span className="h-8 w-8 rounded-full bg-ink text-signal flex items-center justify-center shrink-0" aria-hidden>
+                <Sparkles size={15} />
+              </span>
+              <Station filled={false} size={10} className="animate-pulse" />
               Working on it
             </li>
           ) : null}

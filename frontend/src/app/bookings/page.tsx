@@ -1,21 +1,24 @@
 "use client";
 
+import { BedDouble, Bus, Compass, Plane, TrainFront } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ButtonLink, Loading, Notice, Page, PageTitle } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useRequireUser } from "@/lib/auth";
 import { money, shortDate } from "@/lib/format";
-import type { BookingStatus, BookingSummary } from "@/lib/types";
+import type { BookingStatus, BookingSummary, OfferKind } from "@/lib/types";
 
 const STATUS: Record<BookingStatus, { label: string; tone: string }> = {
-  awaiting_confirmation: { label: "Waiting for payment", tone: "text-ink" },
-  processing: { label: "Confirming", tone: "text-slate" },
-  confirmed: { label: "Confirmed", tone: "text-platform-deep" },
-  failed: { label: "Failed, refunded", tone: "text-brick" },
-  cancelled: { label: "Cancelled", tone: "text-slate" },
-  expired: { label: "Hold expired", tone: "text-slate" },
+  awaiting_confirmation: { label: "Waiting for payment", tone: "bg-signal/25 text-ink" },
+  processing: { label: "Confirming", tone: "bg-rule text-slate" },
+  confirmed: { label: "Confirmed", tone: "bg-platform/15 text-platform-deep" },
+  failed: { label: "Failed, refunded", tone: "bg-brick/10 text-brick" },
+  cancelled: { label: "Cancelled", tone: "bg-rule text-slate" },
+  expired: { label: "Hold expired", tone: "bg-rule text-slate" },
 };
+
+const KIND_ICON: Record<OfferKind, typeof Plane> = { flight: Plane, train: TrainFront, bus: Bus, hotel: BedDouble, activity: Compass };
 
 export default function BookingsPage() {
   const user = useRequireUser();
@@ -39,30 +42,31 @@ export default function BookingsPage() {
         </div>
       ) : null}
       {items?.length ? (
-        <table className="w-full tabular">
-          <caption className="sr-only">Your bookings</caption>
-          <thead>
-            <tr className="text-left text-slate text-sm border-b-2 border-ink">
-              <th className="py-2 font-bold">Booking</th>
-              <th className="py-2 font-bold hidden sm:table-cell">Reference</th>
-              <th className="py-2 font-bold">Status</th>
-              <th className="py-2 font-bold text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((b) => (
-              <tr key={b.id} className="border-b border-rule">
-                <td className="py-4 pr-4">
-                  <Link href={`/bookings/${b.id}`} className="font-bold hover:underline underline-offset-4">{b.title}</Link>
-                  <span className="block text-sm text-slate capitalize">{b.kind}, made {shortDate(b.created_at)}</span>
-                </td>
-                <td className="py-4 pr-4 hidden sm:table-cell font-bold">{b.provider_reference ?? ""}</td>
-                <td className={`py-4 pr-4 font-bold ${STATUS[b.status].tone}`}>{STATUS[b.status].label}</td>
-                <td className="py-4 text-right font-bold">{money(b.price)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ul className="divide-y divide-rule border-y border-rule">
+          {items.map((b) => {
+            const Icon = KIND_ICON[b.kind];
+            return (
+              <li key={b.id}>
+                <Link href={`/bookings/${b.id}`} className="grid grid-cols-[56px_1fr] sm:grid-cols-[64px_1fr_auto_auto] gap-5 py-5 items-center group">
+                  <span className="h-14 w-14 rounded-sm bg-ink-soft flex items-center justify-center text-white shrink-0" aria-hidden>
+                    <Icon size={22} />
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="heading text-lg group-hover:underline underline-offset-4 decoration-signal decoration-[3px]">{b.title}</h2>
+                    <p className="text-slate text-sm">
+                      {b.provider_reference ? <span className="tabular font-bold text-ink">{b.provider_reference}, </span> : null}
+                      made {shortDate(b.created_at)}
+                    </p>
+                  </div>
+                  <span className={`col-start-2 sm:col-start-auto justify-self-start inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold ${STATUS[b.status].tone}`}>
+                    {STATUS[b.status].label}
+                  </span>
+                  <span className="col-start-2 sm:col-start-auto heading text-lg tabular">{money(b.price)}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       ) : null}
     </Page>
   );

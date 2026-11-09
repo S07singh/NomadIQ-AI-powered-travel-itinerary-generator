@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import { Bus, Compass, Plane, TrainFront, BedDouble } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Checkout } from "@/components/checkout";
@@ -13,11 +14,11 @@ import { isoDaysFromNow } from "@/lib/format";
 import type { AnyOffer } from "@/lib/types";
 
 const TABS = [
-  { id: "flights", label: "Flights" },
-  { id: "trains", label: "Trains" },
-  { id: "buses", label: "Buses" },
-  { id: "hotels", label: "Hotels" },
-  { id: "activities", label: "Things to do" },
+  { id: "flights", label: "Flights", icon: Plane },
+  { id: "trains", label: "Trains", icon: TrainFront },
+  { id: "buses", label: "Buses", icon: Bus },
+  { id: "hotels", label: "Hotels", icon: BedDouble },
+  { id: "activities", label: "Things to do", icon: Compass },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
 type SortKey = "price" | "time";
@@ -115,14 +116,17 @@ function SearchInner() {
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => switchTab(t.id)}
-            className={clsx("pb-3 font-bold whitespace-nowrap border-b-4 -mb-px", tab === t.id ? "border-signal" : "border-transparent text-slate hover:text-ink")}
+            className={clsx(
+              "flex items-center gap-2 pb-3 font-bold whitespace-nowrap border-b-4 -mb-px",
+              tab === t.id ? "border-signal text-ink" : "border-transparent text-slate hover:text-ink",
+            )}
           >
-            {t.label}
+            <t.icon size={17} aria-hidden /> {t.label}
           </button>
         ))}
       </div>
 
-      <form onSubmit={run} className="grid grid-cols-2 lg:grid-cols-[repeat(6,minmax(0,1fr))_auto] gap-4 items-end">
+      <form onSubmit={run} className="grid grid-cols-2 lg:grid-cols-[repeat(6,minmax(0,1fr))_auto] gap-4 items-end bg-sheet border-2 border-rule rounded-md p-5 sm:p-6">
         {needsOrigin ? <Field label="From" required placeholder={tab === "flights" ? "BLR or Bengaluru" : "New Delhi"} value={form.origin} onChange={set("origin")} /> : null}
         <Field
           label={needsOrigin ? "To" : tab === "hotels" ? "City" : "Place"}
