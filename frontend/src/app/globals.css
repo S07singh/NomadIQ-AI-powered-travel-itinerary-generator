@@ -21,6 +21,7 @@
   --color-board: #0e1830;
 
   --font-sans: var(--font-overpass), ui-sans-serif, system-ui, sans-serif;
+  --font-editorial: var(--font-fraunces), ui-serif, Georgia, serif;
 
   --radius-xs: 3px;
   --radius-sm: 4px;
@@ -60,6 +61,20 @@ body {
   font-weight: 800;
   letter-spacing: -0.015em;
   line-height: 1.1;
+}
+
+/*
+  Editorial serif — reserved for destination names and the one hero headline.
+  Everything else (nav, buttons, labels, data) stays in Overpass. Two families,
+  clearly distinct roles: Overpass is the signage, Fraunces is the postcard.
+*/
+.editorial {
+  font-family: var(--font-editorial);
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  line-height: 0.96;
+  font-feature-settings: "ss01";
 }
 
 :focus-visible {
@@ -123,6 +138,32 @@ body {
   }
 }
 
+/*
+  Hero slideshow — real destination photography standing in for the "loop" the
+  homepage needs. A timer (Hero component) cross-fades slides via opacity; this
+  keyframe just gives the active slide a slow one-shot drift (Ken Burns) so the
+  frame never sits dead still. No video file to host or license; same Wikimedia
+  pipeline the rest of the app already trusts.
+*/
+@keyframes hero-drift {
+  from { transform: scale(1.06) translate3d(0, 0, 0); }
+  to { transform: scale(1.16) translate3d(-1.2%, -1.6%, 0); }
+}
+.hero-drift {
+  animation: hero-drift 7s linear forwards;
+}
+.hero-scrim {
+  background:
+    linear-gradient(to top, color-mix(in srgb, var(--color-board) 92%, transparent) 0%, color-mix(in srgb, var(--color-board) 55%, transparent) 40%, transparent 70%),
+    linear-gradient(to right, color-mix(in srgb, var(--color-board) 50%, transparent) 0%, transparent 55%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-drift {
+    animation: none;
+  }
+}
+
 /* Sentence-form inputs in the planner: the field is the type. */
 .blank {
   font: inherit;
@@ -141,6 +182,22 @@ body {
   outline: none;
   border-bottom-color: var(--color-platform);
   background: color-mix(in srgb, var(--color-signal) 22%, transparent);
+}
+
+/* Same sentence field, set for the dark hero photo instead of the paper background. */
+.blank-light {
+  border-bottom-color: color-mix(in srgb, white 75%, transparent);
+  color: white;
+}
+.blank-light::placeholder {
+  color: color-mix(in srgb, white 55%, transparent);
+}
+.blank-light:focus {
+  border-bottom-color: var(--color-signal);
+  background: color-mix(in srgb, white 16%, transparent);
+}
+.blank-light option {
+  color: var(--color-ink);
 }
 
 /* Photos never pop in as broken boxes. */

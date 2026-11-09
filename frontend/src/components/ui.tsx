@@ -2,13 +2,14 @@ import clsx from "clsx";
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
-type Variant = "primary" | "ink" | "quiet" | "danger";
+type Variant = "primary" | "ink" | "quiet" | "danger" | "signal";
 
 const variants: Record<Variant, string> = {
   primary: "bg-platform text-white hover:bg-platform-deep",
   ink: "bg-ink text-white hover:bg-ink-soft",
   quiet: "bg-transparent text-ink border-2 border-ink/80 hover:bg-ink hover:text-white",
   danger: "bg-transparent text-brick border-2 border-brick/70 hover:bg-brick hover:text-white",
+  signal: "bg-signal text-ink hover:bg-signal-deep",
 };
 
 const base =
