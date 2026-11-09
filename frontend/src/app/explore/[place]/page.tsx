@@ -30,30 +30,27 @@ export default function PlacePage() {
 
   const title = data.place?.name ?? name.split(",")[0];
   const where = [data.place?.region, data.place?.country].filter(Boolean).join(", ");
+  const cover = data.images[0] ?? null;
+  const gallery = data.images.slice(1, 7);
 
   return (
     <Page>
-      <header className="pt-10 pb-8 flex flex-wrap items-end justify-between gap-6">
-        <div>
-          <h1 className="display text-5xl sm:text-7xl">{title}</h1>
-          {where ? <p className="mt-2 text-lg text-slate">{where}</p> : null}
+      <div className="mt-6 relative h-[46vh] min-h-[340px] max-h-[540px] overflow-hidden rounded-md bg-ink-soft">
+        {cover ? <Photo image={cover} priority className="absolute inset-0 h-full w-full" /> : <div className="absolute inset-0 bg-gradient-to-br from-ink-soft to-board" aria-hidden />}
+        <div className="absolute inset-0 hero-scrim" aria-hidden />
+        <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8">
+          <h1 className="editorial text-4xl sm:text-6xl text-white max-w-[18ch]">{title}</h1>
+          {where ? <p className="mt-2 text-white/80 text-base sm:text-lg">{where}</p> : null}
         </div>
-        <div className="flex flex-wrap gap-3">
-          <ButtonLink href={`/trips/new?to=${encodeURIComponent(name)}&days=4`}>Plan a trip here</ButtonLink>
-          <ButtonLink variant="quiet" href={`/search?tab=hotels&city=${encodeURIComponent(title)}`}>Find a place to stay</ButtonLink>
-        </div>
-      </header>
-
-      {data.images.length ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 auto-rows-[150px] sm:auto-rows-[190px] gap-1.5 rounded-md overflow-hidden">
-          {data.images.slice(0, 7).map((img, i) => (
-            <Photo key={img.url} image={img} className={i === 0 ? "col-span-2 row-span-2" : i === 3 ? "sm:col-span-2" : ""} credit={i === 0} />
-          ))}
-        </div>
-      ) : null}
+        {cover?.attribution ? <p className="absolute bottom-3 right-4 text-xs text-white/50">{cover.attribution}</p> : null}
+      </div>
+      <div className="flex flex-wrap justify-end gap-3 mt-4">
+        <ButtonLink variant="quiet" href={`/search?tab=hotels&city=${encodeURIComponent(title)}`}>Find a place to stay</ButtonLink>
+        <ButtonLink href={`/trips/new?to=${encodeURIComponent(name)}&days=4`}>Plan a trip here</ButtonLink>
+      </div>
 
       <div className="mt-12 grid lg:grid-cols-[1fr_360px] gap-12">
-        <div>
+        <div className="min-w-0">
           {data.summary?.summary ? (
             <>
               <p className="text-xl leading-relaxed max-w-[62ch]">{data.summary.summary}</p>
@@ -63,6 +60,14 @@ export default function PlacePage() {
                 </a>
               ) : null}
             </>
+          ) : null}
+
+          {gallery.length ? (
+            <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 auto-rows-[150px] sm:auto-rows-[180px] gap-1.5 rounded-md overflow-hidden">
+              {gallery.map((img) => (
+                <Photo key={img.url} image={img} className="group [&>img]:transition-transform [&>img]:duration-700 [&>img]:ease-out hover:[&>img]:scale-105" />
+              ))}
+            </div>
           ) : null}
 
           {data.weather.length ? (
