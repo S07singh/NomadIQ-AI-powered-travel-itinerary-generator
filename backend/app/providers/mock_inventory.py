@@ -205,7 +205,10 @@ class MockGroundProvider(_MockBookingMixin, GroundProvider):
     async def search(self, mode: OfferKind, req: GroundSearchRequest) -> list[TransportOffer]:
         rng = _rng(mode.value, req.model_dump(mode="json"))
         offers = []
-        options = TRAINS if mode == OfferKind.train else BUS_OPERATORS
+        # Shuffle per route+date (seeded, so it's stable on refresh) — otherwise every search
+        # cycles the list in the same order and shows the same named trains for every route.
+        options = list(TRAINS if mode == OfferKind.train else BUS_OPERATORS)
+        rng.shuffle(options)
         for i in range(min(req.max_results, 6)):
             dep = _at(req.date, rng.randint(0, 22), rng.choice([0, 10, 20, 30, 40, 50]))
             duration = rng.randint(240, 960)
